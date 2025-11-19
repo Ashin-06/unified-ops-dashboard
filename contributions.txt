@@ -1,3 +1,4 @@
 Contribution 1 on 2025-11-18 01:29:10 - feat: initial repository structure
 Contribution 2 on 2025-11-18 10:14:27 - docs: add README.md with setup instructions
 Contribution 3 on 2025-11-18 16:20:33 - feat: add requirements.txt with initial dependencies
+Contribution 4 on 2025-11-19 06:26:20 - feat: implement system monitor cpu and memory collection

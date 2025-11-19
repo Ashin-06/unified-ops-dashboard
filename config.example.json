@@ -1,0 +1,45 @@
+{
+    "master_api_key": "CHANGE_THIS_SECRET_KEY",
+    "performance": {
+        "frontend_poll_interval": 15,
+        "db_batch_size": 100,
+        "db_batch_interval": 5,
+        "monitoring_interval": 10,
+        "cleanup_interval": 3600,
+        "data_retention_hours": 168
+    },
+    "alerts": {
+        "cpu_threshold": 80,
+        "memory_threshold": 80,
+        "disk_threshold": 90,
+        "network_io_threshold_mbps": 100,
+        "tcp_reset_threshold": 20,
+        "server_error_threshold": 10,
+        "alert_cooldown_seconds": 300
+    },
+    "packet_sniffing": {
+        "enabled": false,
+        "interface": "Ethernet",
+        "max_queue_size": 1000
+    },
+    "integrations": {
+        "wazuh": {
+            "enabled": false,
+            "wazuh_url": "https://wazuh-server:55000",
+            "username": "admin",
+            "password": "admin"
+        },
+        "zabbix": {
+            "enabled": false,
+            "zabbix_url": "http://zabbix-server/api_jsonrpc.php",
+            "username": "Admin",
+            "password": "zabbix"
+        },
+        "grafana": {
+            "enabled": false,
+            "url": "http://grafana-server:3000",
+            "dashboard_url": "",
+            "embed": false
+        }
+    }
+}
