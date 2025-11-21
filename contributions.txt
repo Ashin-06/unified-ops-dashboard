@@ -5,3 +5,4 @@ Contribution 4 on 2025-11-19 06:26:20 - feat: implement system monitor cpu and m
 Contribution 5 on 2025-11-20 12:57:51 - fix: fix mem usage computation divisor
 Contribution 6 on 2025-11-21 05:58:40 - docs: update README with requirements notes
 Contribution 7 on 2025-11-21 09:17:07 - feat: implement disk monitoring module
+Contribution 8 on 2025-11-22 02:07:23 - feat: implement network io counters extraction
