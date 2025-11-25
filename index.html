@@ -1,0 +1,2041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Unified Ops Dashboard - Real-time system monitoring for CPU, memory, network, security and multi-server infrastructure.">
+    <title>✨ Unified Ops Dashboard v15.3</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    
+    <style>
+        :root {
+            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --bg-gradient-start: #667eea;
+            --bg-gradient-end: #764ba2;
+            --bg-body: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            --bg-content: white;
+            --bg-content-alt: #f8f9fa;
+            --bg-content-hover: #f1f3f5;
+            --bg-header: white;
+            --bg-badge-success: #d4edda;
+            --bg-badge-danger: #f8d7da;
+            --bg-badge-info: #d1ecf1;
+            --bg-badge-warning: #fff3cd;
+            --bg-badge-not-found: #e2e3e5;
+            --bg-stat-card: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            --bg-tab: white;
+            --bg-tab-active: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            --bg-log-viewer: #1e1e1e;
+            --bg-quick-stats: rgba(255, 255, 255, 0.9);
+            --bg-modal: white;
+            --bg-button: var(--bg-gradient-start);
+            --bg-button-hover: var(--bg-gradient-end);
+
+            --text-color: #333;
+            --text-color-light: #666;
+            --text-color-inverted: white;
+            --text-color-link: var(--bg-gradient-start);
+            --text-color-link-alt: var(--bg-gradient-end);
+            --text-badge-success: #155724;
+            --text-badge-danger: #721c24;
+            --text-badge-info: #0c5460;
+            --text-badge-warning: #856404;
+            --text-badge-not-found: #383d41;
+            --text-log-default: #d4d4d4;
+            --text-log-error: #f48771;
+            --text-log-warning: #dcdcaa;
+            --text-log-info: #9cdcfe;
+            --text-quick-stats: #333;
+
+            --border-color: #eee;
+            --border-color-strong: #667eea;
+            --shadow-color: rgba(0,0,0,0.1);
+            --shadow-color-light: rgba(0,0,0,0.05);
+            --shadow-color-strong: rgba(0,0,0,0.15);
+            --backdrop-color: rgba(0,0,0,0.6);
+            
+            --bg-cell-warning: #fff3cd;
+            --text-cell-warning: #856404;
+            
+            --bg-alert-badge: #dc3545;
+            --text-alert-badge: white;
+
+            --bg-status-online: var(--bg-badge-success);
+            --text-status-online: var(--text-badge-success);
+            --bg-status-warning: var(--bg-badge-warning);
+            --text-status-warning: var(--text-badge-warning);
+            --bg-status-offline: var(--bg-badge-danger);
+            --text-status-offline: var(--text-badge-danger);
+            
+            --bg-port-open: var(--bg-badge-danger);
+            --text-port-open: var(--text-badge-danger);
+            --bg-port-closed: var(--bg-badge-success);
+            --text-port-closed: var(--text-badge-success);
+        }
+
+        body.dark-mode {
+            --bg-gradient-start: #4A00E0;
+            --bg-gradient-end: #8E2DE2;
+            --bg-body: #121212;
+            --bg-content: #1e1e1e;
+            --bg-content-alt: #2a2a2a;
+            --bg-content-hover: #333333;
+            --bg-header: #1e1e1e;
+            --bg-badge-success: #155724;
+            --bg-badge-danger: #721c24;
+            --bg-badge-info: #0c5460;
+            --bg-badge-warning: #856404;
+            --bg-badge-not-found: #383d41;
+            --bg-stat-card: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%);
+            --bg-tab: #2a2a2a;
+            --bg-tab-active: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            --bg-log-viewer: #121212;
+            --bg-quick-stats: rgba(30, 30, 30, 0.95);
+            --bg-modal: #2a2a2a;
+            --bg-button: var(--bg-gradient-start);
+            --bg-button-hover: var(--bg-gradient-end);
+
+            --text-color: #e0e0e0;
+            --text-color-light: #aaa;
+            --text-color-inverted: white;
+            --text-color-link: #91a7ff;
+            --text-color-link-alt: #bb86fc;
+            --text-badge-success: #d4edda;
+            --text-badge-danger: #f8d7da;
+            --text-badge-info: #d1ecf1;
+            --text-badge-warning: #fff3cd;
+            --text-badge-not-found: #e2e3e5;
+            --text-log-default: #d4d4d4;
+            --text-log-error: #f48771;
+            --text-log-warning: #dcdcaa;
+            --text-log-info: #9cdcfe;
+            --text-quick-stats: #e0e0e0;
+
+            --border-color: #333;
+            --border-color-strong: #91a7ff;
+            --shadow-color: rgba(0,0,0,0.5);
+            --shadow-color-light: rgba(0,0,0,0.3);
+            --shadow-color-strong: rgba(0,0,0,0.7);
+            --backdrop-color: rgba(0,0,0,0.8);
+            
+            --bg-cell-warning: #332701;
+            --text-cell-warning: #fff3cd;
+
+            --bg-status-online: #155724;
+            --text-status-online: #d4edda;
+            --bg-status-warning: #856404;
+            --text-status-warning: #fff3cd;
+            --bg-status-offline: #721c24;
+            --text-status-offline: #f8d7da;
+            
+            --bg-port-open: #721c24;
+            --text-port-open: #f8d7da;
+            --bg-port-closed: #155724;
+            --text-port-closed: #d4edda;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-family);
+            background: var(--bg-body);
+            color: var(--text-color); 
+            min-height: 100vh; 
+            padding: 1rem;
+        }
+        
+        .container { max-width: 1600px; margin: 0 auto; width: 100%; }
+        .header { 
+            background: var(--bg-header); 
+            border-radius: 15px; 
+            padding: clamp(15px, 3vw, 30px); 
+            margin-bottom: 1rem; 
+            box-shadow: 0 10px 30px var(--shadow-color); 
+            position: relative;
+        }
+        .header h1 { color: var(--text-color-link); font-size: clamp(1.5rem, 4vw, 2.5rem); margin-bottom: 0.5rem; }
+        
+        #darkModeToggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-content-alt);
+            border: 1px solid var(--border-color);
+            color: var(--text-color-light);
+            font-size: 1.25rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #darkModeToggle:hover { background: var(--bg-content-hover); color: var(--text-color); }
+
+        .perf-badge { display: inline-block; background: var(--bg-badge-success); color: var(--text-badge-success); padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin: 5px; }
+        .integration-badges { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+        .integration-badge { padding: 5px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+        .integration-badge.connected { background: var(--bg-badge-success); color: var(--text-badge-success); }
+        .integration-badge.disconnected { background: var(--bg-badge-danger); color: var(--text-badge-danger); }
+        
+        .global-controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 15px;
+            padding: 15px;
+            background: var(--bg-content-alt);
+            border-radius: 10px;
+        }
+        .global-controls label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-color-link-alt);
+        }
+        .global-controls select {
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            border: 2px solid var(--border-color-strong);
+            background: var(--bg-content);
+            color: var(--text-color-link);
+            font-weight: 600;
+            cursor: pointer;
+            min-width: 250px;
+        }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: clamp(10px, 2vw, 15px); margin-top: 1.5rem; }
+        .stat-card { background: var(--bg-stat-card); padding: clamp(15px, 3vw, 20px); border-radius: 10px; color: var(--text-color-inverted); min-height: 100px; display:flex; flex-direction:column; justify-content:center; }
+        .stat-card h3 { font-size: clamp(0.75rem, 1.5vw, 0.9rem); opacity:0.9; margin-bottom:8px;}
+        .stat-card .value { font-size: clamp(1.5rem, 3vw, 2rem); font-weight:bold; }
+        .user-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+        .user-badge { background: rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; }
+        
+        .controls { display:flex; gap:10px; align-items:center; flex-wrap:wrap; background:var(--bg-content); padding:15px; border-radius:10px; margin-bottom: 1.5rem; }
+        .controls label { font-weight:600; color:var(--text-color-link); }
+        .controls select, .controls button, .controls input { padding:8px 12px; border-radius:8px; font-size:1rem; }
+        .controls select { border:2px solid var(--border-color-strong); background:var(--bg-content); color:var(--text-color-link); font-weight:500; cursor:pointer; }
+        .controls select[multiple] { height: 100px; padding: 10px; background: var(--bg-content); color: var(--text-color); }
+        .controls input[type="text"] { border: 2px solid var(--border-color-strong); background: var(--bg-content); color: var(--text-color); }
+        .controls button { border:none; background:var(--bg-button); color:var(--text-color-inverted); font-weight:600; transition:all 0.3s; cursor:pointer; }
+        .controls button:hover { background:var(--bg-button-hover); transform:translateY(-2px); }
+        .controls button:disabled { background: var(--bg-badge-not-found); cursor: not-allowed; transform: none; }
+        .controls .export-btn { background: #28a745; margin-left: auto; }
+        .controls .export-btn:hover { background: #218838; }
+        .controls .refresh-timestamp { margin-left: auto; font-size: 0.85rem; color: var(--text-color-light); }
+        
+        .filter-buttons { display: flex; gap: 10px; margin-bottom: 1rem; }
+        .filter-btn { padding:8px 16px; border:2px solid var(--border-color-strong); background:var(--bg-content); color:var(--text-color-link); border-radius:20px; cursor:pointer; font-weight:600; transition:all 0.3s; }
+        .filter-btn:hover, .filter-btn.active { background:var(--bg-button); color:var(--text-color-inverted); }
+        .filter-btn.error { border-color: #dc3545; color: #dc3545; }
+        .filter-btn.warning { border-color: #ffc107; color: #ffc107; }
+        .filter-btn.error:hover, .filter-btn.error.active { background: #dc3545; color: white; }
+        .filter-btn.warning:hover, .filter-btn.warning.active { background: #ffc107; color: #333; }
+
+        .tabs { display:flex; gap:8px; margin:1rem 0; flex-wrap:wrap; overflow-x:auto; }
+        .tab { padding: clamp(8px,2vw,12px) clamp(12px,3vw,24px); background:var(--bg-tab); border:none; border-radius:8px; cursor:pointer; font-size:clamp(0.8rem,1.5vw,1rem); transition:all .3s; box-shadow:0 4px 6px var(--shadow-color); white-space:nowrap; color: var(--text-color); }
+        .tab:hover { transform:translateY(-2px); box-shadow:0 6px 12px var(--shadow-color-strong); }
+        .tab.active { background:var(--bg-tab-active); color:var(--text-color-inverted); }
+        .tab-content { display:none; background:var(--bg-content); border-radius:15px; padding:clamp(15px,3vw,30px); box-shadow:0 10px 30px var(--shadow-color); overflow-x:auto; }
+        .tab-content.active { display:block; }
+        .tab-content h2 { font-size:clamp(1.25rem,3vw,1.75rem); margin-bottom:1rem; color:var(--text-color-link); }
+        .chart-container { height: clamp(250px, 40vh, 400px); margin:1rem 0; position:relative; }
+        .chart-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap:20px; margin:1rem 0; }
+        
+        .alert-badge {
+            display: inline-block;
+            background-color: var(--bg-alert-badge);
+            color: var(--text-alert-badge);
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 12px;
+            margin-left: 8px;
+            vertical-align: middle;
+            display: none;
+        }
+        .tab.active .alert-badge { background-color: white; color: var(--bg-gradient-start); }
+        
+        .no-data-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; justify-content: center; align-items: center;
+            color: var(--text-color-light); font-size: 1.1rem; font-weight: 500;
+            background: rgba(255,255,255,0.1);
+            z-index: 10;
+        }
+        body.dark-mode .no-data-overlay { background: rgba(30,30,30,0.8); }
+
+        table { width:100%; border-collapse:collapse; margin-top:1rem; font-size:clamp(0.75rem,1.5vw,0.95rem); display:block; overflow-x:auto; }
+        thead, tbody { display:table; width:100%; table-layout:fixed; }
+        th, td { padding:clamp(8px,1.5vw,12px); text-align:left; border-bottom:1px solid var(--border-color); word-break:break-word; }
+        th { background:var(--bg-content-alt); font-weight:600; color:var(--text-color-link); position:sticky; top:0; z-index:10; }
+        tr:hover { background:var(--bg-content-hover); }
+        .clickable-row { cursor: pointer; }
+        
+        .filter-input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background: var(--bg-content-alt);
+            color: var(--text-color);
+        }
+        
+        .comparison-table .cell-warning {
+            background-color: var(--bg-cell-warning);
+            color: var(--text-cell-warning);
+            font-weight: 700;
+        }
+        
+        .loading { text-align:center; padding:40px; color:var(--text-color-link); }
+        .log-viewer { background:var(--bg-log-viewer); color:var(--text-log-default); padding:12px; border-radius:8px; font-family:monospace; max-height:60vh; overflow-y:auto; }
+        .log-line { margin:2px 0; }
+        .log-line.error { color:var(--text-log-error); }
+        .log-line.warning { color:var(--text-log-warning); }
+        .log-line.info { color:var(--text-log-info); }
+        
+        .log-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:15px; margin:15px 0; }
+        .log-stat { background:var(--bg-content); padding:15px; border-radius:8px; border-left:4px solid var(--border-color-strong); box-shadow: 0 4px 12px var(--shadow-color-light); }
+        .log-stat h4 { color:var(--text-color-link); margin-bottom:5px; font-size: 0.9rem; text-transform: uppercase; }
+        .log-stat .number { font-size:2rem; font-weight:bold; color:var(--text-color); }
+        
+        .ai-analysis { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 20px; border-radius: 10px; margin: 20px 0; color: #333; }
+        body.dark-mode .ai-analysis { background: linear-gradient(135deg, #2a2a2a 0%, #333333 100%); color: var(--text-color); }
+        .ai-analysis h3 { color: var(--text-color-link); margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .ai-analysis h3::before { content: '🤖'; font-size: 1.5rem; }
+        .insight { background: var(--bg-content); padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid var(--border-color-strong); }
+        .insight.critical { border-left-color: #dc3545; }
+        .insight.security { border-left-color: #ffc107; }
+        .insight.warning { border-left-color: #fd7e14; }
+        .insight-type { font-weight: 600; color: var(--text-color-link); text-transform: uppercase; font-size: 0.85rem; }
+        .insight-message { margin: 5px 0; font-size: 1rem; }
+        .insight-recommendation { color: var(--text-color-light); font-style: italic; font-size: 0.9rem; }
+        
+        .sub-tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border-color); }
+        .sub-tab { padding: 10px 18px; border: none; background: transparent; cursor: pointer; font-size: 1rem; font-weight: 600; color: var(--text-color-link-alt); border-bottom: 3px solid transparent; }
+        .sub-tab.active { color: var(--text-color-link); border-bottom-color: var(--border-color-strong); }
+        .sub-tab-content { display: none; }
+        .sub-tab-content.active { display: block; }
+        
+        .port-filters { display: none; }
+        .conn-summary { display:flex; gap:15px; flex-wrap:wrap; margin:15px 0; padding:15px; background:var(--bg-content-alt); border-radius:10px; }
+        
+        .conn-stat { padding:10px 15px; background:var(--bg-content); border-radius:8px; border-left:4px solid var(--border-color-strong); cursor:pointer; transition:all 0.3s; display:flex; align-items:center; gap:8px; }
+        .conn-stat:hover { transform:translateY(-2px); box-shadow:0 4px 8px var(--shadow-color); }
+        .conn-stat strong { color:var(--text-color-link); }
+        .conn-stat.active { background:var(--bg-button); color:var(--text-color-inverted); }
+        .conn-stat.active strong { color:var(--text-color-inverted); }
+        .conn-help-icon {
+            display: inline-block;
+            width: 18px; height: 18px; line-height: 18px; text-align: center;
+            border-radius: 50%; background: #eee; color: var(--text-color-link);
+            font-weight: bold; font-size: 0.8rem; cursor: help;
+        }
+        body.dark-mode .conn-help-icon { background: #444; color: #91a7ff; }
+        .conn-stat.active .conn-help-icon { background: rgba(255,255,255,0.3); color: white; }
+        
+        .alert { padding:clamp(10px,2vw,15px); margin:10px 0; border-radius:8px; }
+        .alert.warning { background:#fff3cd; border-left:4px solid #ffc107; color: #856404; }
+        .alert.error { background:#f8d7da; border-left:4px solid #dc3545; color: #721c24; }
+        .alert.network { background:#d1ecf1; border-left:4px solid #0c5460; color: #0c5460; }
+        .alert.performance { background:#e2e3e5; border-left:4px solid #6c757d; color: #383d41; }
+        body.dark-mode .alert.warning { background: #332701; color: #fff3cd; }
+        body.dark-mode .alert.error { background: #2d0f13; color: #f8d7da; }
+        body.dark-mode .alert.network { background: #0c2328; color: #d1ecf1; }
+        body.dark-mode .alert.performance { background: #26282a; color: #e2e3e5; }
+        
+        .badge { display:inline-block; padding:4px 10px; border-radius:20px; font-size:0.85rem; font-weight:600; }
+        .badge.success { background:var(--bg-badge-success); color:var(--text-badge-success); }
+        .badge.danger { background:var(--bg-badge-danger); color:var(--text-badge-danger); }
+        .badge.not_found { background:var(--bg-badge-not-found); color:var(--text-badge-not-found); }
+        .badge.warning { background:var(--bg-badge-warning); color:var(--text-badge-warning); }
+        .badge.info { background:var(--bg-badge-info); color:var(--text-badge-info); }
+        
+        .badge.severity-0 { background: #e2e3e5; color: #383d41; }
+        .badge.severity-1 { background: #d1ecf1; color: #0c5460; }
+        .badge.severity-2 { background: #fff3cd; color: #856404; }
+        .badge.severity-3 { background: #ffc107; color: #333; }
+        .badge.severity-4 { background: #fd7e14; color: #fff; }
+        .badge.severity-5 { background: #dc3545; color: #fff; }
+        body.dark-mode .badge.severity-0 { background: #383d41; color: #e2e3e5; }
+        body.dark-mode .badge.severity-1 { background: #0c5460; color: #d1ecf1; }
+        body.dark-mode .badge.severity-2 { background: #856404; color: #fff3cd; }
+        body.dark-mode .badge.severity-3 { background: #ffc107; color: #333; }
+        
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--backdrop-color); display: none;
+            justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-content {
+            background: var(--bg-modal); padding: 25px; border-radius: 10px;
+            width: 90%; max-width: 600px; box-shadow: 0 10px 30px var(--shadow-color-strong);
+            position: relative;
+        }
+        .modal-close {
+            position: absolute; top: 10px; right: 15px;
+            font-size: 28px; font-weight: bold; cursor: pointer; color: var(--text-color-light);
+        }
+        .modal-close:hover { color: var(--text-color); }
+        .modal-content h2 { margin-top: 0; color: var(--text-color-link); }
+        .modal-content p { line-height: 1.6; }
+        .modal-content p strong { color: var(--text-color-link); }
+        
+        #connectionDetails {
+            margin-top: 15px;
+            background: var(--bg-content-alt);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        #connectionDetails h4 { color: var(--text-color-link-alt); border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 10px; }
+        #connectionDetails p { font-size: 0.95rem; margin-bottom: 8px; }
+        #connectionDetails code {
+            word-break: break-all;
+            background: var(--bg-content-hover);
+            padding: 5px;
+            border-radius: 4px;
+            display: block;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        
+        .settings-group { margin-bottom: 2rem; background: var(--bg-content-alt); padding: 20px; border-radius: 10px; }
+        .settings-group h3 { color: var(--text-color-link-alt); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; }
+        .setting-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+        .setting-item label { font-weight: 600; font-size: 1.1rem; }
+        .setting-item input[type="range"] { width: 50%; cursor: pointer; }
+        .setting-item .slider-value { font-size: 1.1rem; font-weight: 600; width: 80px; text-align: right; color: var(--text-color-link); }
+        
+        .server-status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+        .server-status-card { background: var(--bg-content-alt); padding: 20px; border-radius: 10px; box-shadow: 0 4px 12px var(--shadow-color-light); display: flex; justify-content: space-between; align-items: center; }
+        .server-status-info { font-size: 1.1rem; font-weight: 600; word-break: break-all; }
+        .server-status-info .last-seen { font-size: 0.85rem; color: var(--text-color-light); font-weight: 400; display: block; margin-top: 5px; }
+        .server-status-badge { font-size: 1rem; font-weight: 700; padding: 8px 15px; border-radius: 20px; }
+        .server-status-badge.Online { background: var(--bg-status-online); color: var(--text-status-online); }
+        .server-status-badge.Warning { background: var(--bg-status-warning); color: var(--text-status-warning); }
+        .server-status-badge.Offline { background: var(--bg-status-offline); color: var(--text-status-offline); }
+        
+        #processTreeContainer ul { list-style-type: none; padding-left: 20px; font-family: monospace; }
+        #processTreeContainer li { position: relative; padding: 4px 0 4px 30px; line-height: 1.5; border-left: 1px dashed var(--border-color); }
+        #processTreeContainer li::before { content: ''; position: absolute; top: 14px; left: 0; width: 20px; height: 1px; background: var(--border-color); }
+        #processTreeContainer li::after { content: '📄'; position: absolute; top: 5px; left: 0px; font-size: 1.1rem; color: var(--text-color); }
+        #processTreeContainer li:last-child { border-left: none; }
+        #processTreeContainer li:last-child::before { border-left: 1px dashed var(--border-color); height: 30px; width: 0px; top: -16px; }
+        #processTreeContainer ul > li::after { content: '🌳'; }
+        #processTreeContainer li[data-proc-type="service"]::after { content: '⚙️'; }
+        #processTreeContainer li[data-proc-type="browser"]::after { content: '🌐'; }
+        #processTreeContainer li[data-proc-type="terminal"]::after { content: '🧑‍💻'; }
+        #processTreeContainer li strong { color: var(--text-color-link); font-size: 1.1rem; }
+        #processTreeContainer li .proc-meta { font-size: 0.9rem; color: var(--text-color-light); }
+        .proc-actions { display: inline-block; margin-left: 10px; }
+        .proc-actions button { padding: 2px 6px; font-size: 0.8rem; border-radius: 5px; border: 1px solid var(--border-color-strong); background: var(--bg-content-alt); color: var(--text-color-link); cursor: pointer; }
+        .proc-actions button.kill-tree { border-color: #dc3545; color: #dc3545; }
+        .proc-actions button:hover { background: var(--bg-button); color: white; }
+        .proc-actions button.kill-tree:hover { background: #dc3545; color: white; }
+        
+        #portScanResults .badge.open { background: var(--bg-port-open); color: var(--text-port-open); }
+        #portScanResults .badge.closed { background: var(--bg-port-closed); color: var(--text-port-closed); }
+
+        .select-server-message {
+            display: none;
+            padding: 40px;
+            text-align: center;
+            font-size: 1.2rem;
+            color: var(--text-color-light);
+            background: var(--bg-content-alt);
+            border-radius: 10px;
+        }
+
+        /* IFrame Container for Grafana - ADDED FROM BIG FILE */
+        #grafanaIframeContainer {
+            width: 100%;
+            height: 800px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+            background: var(--bg-content-alt);
+            position: relative;
+        }
+        
+        #grafanaIframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Checkbox List for Comparison - ADDED FROM BIG FILE */
+        .checkbox-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            background: var(--bg-content-alt);
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 10px 0;
+            border: 1px solid var(--border-color);
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+        
+        /* Sparkline in stat cards */
+        .stat-card .sparkline-wrap {
+            margin-top: 8px;
+            height: 36px;
+            opacity: 0.7;
+        }
+
+        /* Toast Notification System */
+        #toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .toast {
+            padding: 14px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.95rem;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+            opacity: 0;
+            transform: translateX(60px);
+            transition: all 0.3s ease;
+            pointer-events: auto;
+            max-width: 340px;
+        }
+        .toast.show { opacity: 1; transform: translateX(0); }
+        .toast.success { background: linear-gradient(135deg, #28a745, #20c997); }
+        .toast.error   { background: linear-gradient(135deg, #dc3545, #fd7e14); }
+        .toast.warning { background: linear-gradient(135deg, #ffc107, #fd7e14); color: #333; }
+        .toast.info    { background: linear-gradient(135deg, #667eea, #764ba2); }
+
+        /* Auto-refresh countdown ring */
+        #refreshCountdown {
+            position: absolute;
+            top: 20px;
+            right: 70px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--text-color-light);
+        }
+        .countdown-ring {
+            width: 28px;
+            height: 28px;
+        }
+        .countdown-ring circle {
+            fill: none;
+            stroke-width: 3;
+        }
+        .countdown-ring .bg { stroke: var(--border-color); }
+        .countdown-ring .fg { stroke: var(--border-color-strong); stroke-linecap: round;
+            transition: stroke-dashoffset 1s linear;
+            transform: rotate(-90deg); transform-origin: 50% 50%;
+        }
+
+        /* Kill Process Custom Modal */
+        #killModal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--backdrop-color); z-index: 2000;
+            display: none; justify-content: center; align-items: center;
+        }
+        #killModal.show { display: flex; }
+        #killModalBox {
+            background: var(--bg-modal); border-radius: 12px; padding: 30px;
+            max-width: 420px; width: 90%; box-shadow: 0 20px 60px var(--shadow-color-strong);
+            border-top: 4px solid #dc3545;
+        }
+        #killModalBox h3 { color: #dc3545; margin-bottom: 12px; }
+        #killModalBox p  { color: var(--text-color-light); margin-bottom: 20px; line-height: 1.6; }
+        .kill-modal-buttons { display: flex; gap: 10px; }
+        .kill-modal-buttons button { flex: 1; padding: 10px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; transition: 0.2s; }
+        #killConfirmBtn { background: #dc3545; color: white; }
+        #killConfirmBtn:hover { background: #b02a37; }
+        #killCancelBtn { background: var(--bg-content-alt); color: var(--text-color); }
+        #killCancelBtn:hover { background: var(--bg-content-hover); }
+
+        /* Connection status color coding */
+        tr.conn-ESTABLISHED td { border-left: 3px solid #28a745; }
+        tr.conn-TIME_WAIT td   { border-left: 3px solid #ffc107; }
+        tr.conn-CLOSE_WAIT td  { border-left: 3px solid #fd7e14; }
+        tr.conn-LISTEN td      { border-left: 3px solid #17a2b8; }
+        tr.conn-CLOSED td      { border-left: 3px solid #6c757d; }
+
+        /* Log analysis panel */
+        .log-health-bar { height: 8px; border-radius: 4px; background: var(--border-color); margin-top: 6px; overflow: hidden; }
+        .log-health-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+
+        @media (max-width: 768px) {
+            body { padding: 0.5rem; padding-top: 1rem; }
+            .global-controls { flex-direction: column; align-items: stretch; }
+            .global-controls select { min-width: 100%; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .chart-grid { grid-template-columns: 1fr; }
+            #darkModeToggle { top: 15px; right: 15px; }
+            .setting-item { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .setting-item input[type="range"] { width: 100%; }
+            #refreshCountdown { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container"></div>
+
+    <!-- Kill Process Confirmation Modal -->
+    <div id="killModal">
+        <div id="killModalBox">
+            <h3>⚠️ Kill Process?</h3>
+            <p id="killModalDesc">This will forcefully terminate the process. This action cannot be undone.</p>
+            <div class="kill-modal-buttons">
+                <button id="killCancelBtn" onclick="closeKillModal()">Cancel</button>
+                <button id="killConfirmBtn">Kill Process</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div id="serverErrorBanner" style="display:none; margin-bottom:10px; padding:10px; border-radius:8px; font-weight:700;"></div>
+
+            <!-- Auto-refresh Countdown Ring -->
+            <div id="refreshCountdown" title="Next auto-refresh">
+                <svg class="countdown-ring" viewBox="0 0 28 28">
+                    <circle class="bg" cx="14" cy="14" r="11"/>
+                    <circle class="fg" id="countdownArc" cx="14" cy="14" r="11"
+                        stroke-dasharray="69.12" stroke-dashoffset="0"/>
+                </svg>
+                <span id="countdownLabel">15s</span>
+            </div>
+
+            <button id="darkModeToggle" onclick="toggleDarkMode()" title="Toggle Dark/Light Mode (D)">🌙</button>
+            
+            <h1>✨ Unified Ops Dashboard</h1>
+            <p>Aggregating system metrics, Zabbix, Wazuh, and Grafana data into one real-time, AI-powered dashboard. (<span id="hostnameDisplay">Loading...</span>)</p>
+            <div>
+                <span class="perf-badge" id="perfBadge">⚡ Optimized Mode</span>
+                <span class="perf-badge" id="sniffBadge">📡 Loading...</span>
+            </div>
+            <div class="integration-badges" id="integrationStatus"></div>
+            
+            <div class="global-controls">
+                <label for="globalServerSelect">📡 Monitoring Server:</label>
+                <select id="globalServerSelect" onchange="onGlobalServerChange()">
+                    <option value="">Loading servers...</option>
+                </select>
+            </div>
+            
+            <div class="stats-grid" id="headerStats">
+                <div class="stat-card"><h3>CPU Usage</h3><div class="value" id="cpuStat">--%</div></div>
+                <div class="stat-card"><h3>Memory Usage</h3><div class="value" id="memoryStat">--%</div></div>
+                <div class="stat-card"><h3>Disk Usage</h3><div class="value" id="diskStat">--%</div></div>
+                <div class="stat-card"><h3>Uptime</h3><div class="value" id="uptimeStat">--</div></div>
+                <div class="stat-card"><h3>App CPU</h3><div class="value" id="appCpu">--%</div></div>
+                <div class="stat-card"><h3>App Memory</h3><div class="value" id="appMem">--%</div></div>
+                <div class="stat-card"><h3>Logged Users</h3><div class="user-list" id="userList">--</div></div>
+                <div class="stat-card"><h3>Connections</h3><div class="value" id="connStat">--</div></div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab-id="overview" onclick="showTab('overview')">📊 Overview</button>
+            <button class="tab" data-tab-id="wazuh" onclick="showTab('wazuh')">🔒 Wazuh Security</button>
+            <button class="tab" data-tab-id="zabbix" onclick="showTab('zabbix')">🖥️ Zabbix Infra</button>
+            <button class="tab" data-tab-id="grafana" id="grafanaTabBtn" style="display:none;" onclick="showTab('grafana')">📊 Grafana</button>
+            
+            <button class="tab" data-tab-id="security" onclick="showTab('security')">🛡️ Port Scanner</button>
+            <button class="tab" data-tab-id="requests" onclick="showTab('requests')">🌐 Requests</button>
+            <button class="tab" data-tab-id="alerts" onclick="showTab('alerts')">
+                ⚠️ Alerts
+                <span id="alertBadge" class="alert-badge">0</span>
+            </button>
+            <button class="tab" data-tab-id="services" onclick="showTab('services')">⚙️ Services</button>
+            <button class="tab" data-tab-id="processes" onclick="showTab('processes')">💻 Processes</button>
+            <button class="tab" data-tab-id="connections" onclick="showTab('connections')">🔗 Connections</button>
+            <button class="tab" data-tab-id="logs" onclick="showTab('logs')">📋 Logs</button>
+            <button class="tab" data-tab-id="serverStatus" onclick="showTab('serverStatus')">📡 Server Status</button>
+            <button class="tab" data-tab-id="settings" onclick="showTab('settings')">⚙️ Settings</button>
+            <button class="tab" data-tab-id="comparison" onclick="showTab('comparison')">🖥️🖥️ Comparison</button>
+        </div>
+
+        <div id="overview" class="tab-content active">
+            <div class="select-server-message">Please select a specific server to view this tab.</div>
+            <div class="tab-main-content">
+                <div class="controls">
+                    <label for="timelineSelect">Timeline:</label>
+                    <select id="timelineSelect" onchange="updateMetrics()">
+                        <option value="1m">1 min</option>
+                        <option value="5m">5 min</option>
+                        <option value="10m" selected>10 min</option>
+                        <option value="60m">1 hr</option>
+                        <option value="3h">3 hr</option>
+                        <option value="6h">6 hr</option>
+                        <option value="12h">12 hr</option>
+                        <option value="1d">1 day</option>
+                        <option value="1w">1 week</option>
+                        <option value="1M">1 month</option>
+                        <option value="1y">1 year</option>
+                    </select>
+
+                    <button onclick="refreshOverview()">🔄 Refresh</button>
+                    <button onclick="resetAllChartsZoom()">Reset Zoom</button>
+                </div>
+                <h2>System Metrics for <span class="current-server-display">...</span></h2>
+                <div class="chart-grid">
+                    <div class="chart-container"><canvas id="cpuChart"></canvas><div class="no-data-overlay" id="cpuChart-no-data" style="display: none;">No data</div></div>
+                    <div class="chart-container"><canvas id="memoryChart"></canvas><div class="no-data-overlay" id="memoryChart-no-data" style="display: none;">No data</div></div>
+                    <div class="chart-container"><canvas id="networkChart"></canvas><div class="no-data-overlay" id="networkChart-no-data" style="display: none;">No data</div></div>
+                    <div class="chart-container"><canvas id="diskChart"></canvas><div class="no-data-overlay" id="diskChart-no-data" style="display: none;">No data</div></div>
+                    <div class="chart-container"><canvas id="requestsChart"></canvas><div class="no-data-overlay" id="requestsChart-no-data" style="display: none;">No data</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="wazuh" class="tab-content">
+            <div class="controls">
+                <label for="wazuhServerSelect">Agent:</label>
+                <select id="wazuhServerSelect" onchange="refreshWazuh()">
+                    <option value="all">All Agents</option>
+                </select>
+                <button onclick="refreshWazuh()">🔄 Refresh</button>
+            </div>
+            <h2>🔒 Wazuh Security Monitoring</h2>
+            <div class="sub-tabs">
+                <button class="sub-tab active" onclick="showWazuhTab('wazuhSummary', this)">Summary</button>
+                <button class="sub-tab" onclick="showWazuhTab('wazuhAgents', this)">Agents</button>
+                <button class="sub-tab" onclick="showWazuhTab('wazuhAlerts', this)">Recent Alerts</button>
+            </div>
+            <div id="wazuhSummary" class="sub-tab-content active loading">Loading...</div>
+            <div id="wazuhAgents" class="sub-tab-content loading">Loading...</div>
+            <div id="wazuhAlerts" class="sub-tab-content loading">Loading...</div>
+        </div>
+
+        <div id="zabbix" class="tab-content">
+            <div class="controls">
+                <label for="zabbixServerSelect">Host:</label>
+                <select id="zabbixServerSelect" onchange="refreshZabbix()">
+                    <option value="all">All Hosts</option>
+                </select>
+                <button onclick="refreshZabbix()">🔄 Refresh</button>
+            </div>
+            <h2>🖥️ Zabbix Infrastructure Monitoring</h2>
+            <div class="sub-tabs">
+                <button class="sub-tab active" onclick="showZabbixTab('zabbixSummary', this)">Summary</button>
+                <button class="sub-tab" onclick="showZabbixTab('zabbixProblems', this)">Active Problems</button>
+                <button class="sub-tab" onclick="showZabbixTab('zabbixTriggers', this)">Triggers</button>
+            </div>
+            <div id="zabbixSummary" class="sub-tab-content active loading">Loading...</div>
+            <div id="zabbixProblems" class="sub-tab-content loading">Loading...</div>
+            <div id="zabbixTriggers" class="sub-tab-content loading">Loading...</div>
+        </div>
+
+        <div id="grafana" class="tab-content">
+            <div class="controls">
+                <button onclick="reloadGrafana()">🔄 Reload Dashboard</button>
+                <a id="grafanaExternalLink" href="#" target="_blank" class="filter-btn" style="text-decoration:none; line-height:20px; background: #f37726; color: white;">Open in New Tab ↗</a>
+            </div>
+            <h2 style="margin-bottom:15px;">📊 Grafana Dashboard</h2>
+            <div id="grafanaIframeContainer">
+                <iframe id="grafanaIframe" src="" width="100%" height="100%" frameborder="0" style="border:none;"></iframe>
+            </div>
+        </div>
+
+        <div id="security" class="tab-content">
+            <div class="select-server-message">Please select a specific server to view this tab.</div>
+            <div class="tab-main-content">
+                <h2>🛡️ Network Tools for <span class="current-server-display">...</span></h2>
+                <div class="settings-group">
+                    <h3>🔍 Remote Port Scanner</h3>
+                    <p>Run a scan <strong>from the selected server</strong> to another target (e.g., another VM).</p>
+                    <div class="controls">
+                        <label for="portScanHost">Target Host/IP:</label>
+                        <input type="text" id="portScanHost" placeholder="e.g., 192.168.1.50" style="min-width: 250px;">
+                        <button id="btnScan" onclick="runPortScan()">🚀 Start Scan</button>
+                    </div>
+                    <div class="filter-buttons" id="portScanFilters" style="margin-top: 15px;">
+                        <button class="filter-btn active" onclick="filterPortScan('all', this)">All Ports</button>
+                        <button class="filter-btn error" onclick="filterPortScan('open', this)">Open Only</button>
+                        <button class="filter-btn" onclick="filterPortScan('closed', this)">Closed Only</button>
+                    </div>
+                    <div id="portScanResults" class="loading" style="min-height: 100px; border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-top: 10px; background: var(--bg-content);">
+                        Ready to scan. Enter a target IP above.
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="requests" class="tab-content">
+            <div class="select-server-message">Please select a specific server to view this tab.</div>
+            <div class="tab-main-content">
+                <div class="controls">
+                    <label for="portFilterSelect">Port:</label>
+                    <select id="portFilterSelect" onchange="filterByPort(this.value)">
+                        <option value="">All Ports</option>
+                    </select>
+                    <button onclick="refreshRequests()">🔄 Refresh</button>
+                    <span class="refresh-timestamp" id="requests-refresh-time"></span>
+                    <button class="export-btn" onclick="exportTableToCSV('requestsTable', 'requests.csv')">📥 Export CSV</button>
+                </div>
+                <h2>Recent Requests for <span class="current-server-display">...</span></h2>
+                <input type="text" id="requestsFilter" class="filter-input" onkeyup="filterTable('requestsTable', 'requestsFilter')" placeholder="Filter requests...">
+                <div id="requestsTable" class="loading">Loading...</div>
+            </div>
+        </div>
+
+        <div id="alerts" class="tab-content">
+            <div class="tab-main-content">
+                <div class="controls">
+                    <button onclick="loadAlerts()">🔄 Refresh</button>
+                    <span class="refresh-timestamp" id="alerts-refresh-time"></span>
+                    <button class="export-btn" onclick="exportAlertsToCSV('alertsList', 'alerts.csv')">📥 Export CSV</button>
+                </div>
+                <h2>Recent Alerts for <span class="current-server-display">...</span></h2>
+                <p>This tab shows alerts for the selected server. To see all alerts, select "All Servers" in the main dropdown.</p>
+                <div id="alertsList" class="loading">Loading...</div>
+            </div>
+        </div>
+
+        <div id="services" class="tab-content">
+            <div class="select-server-message">Please select a specific server to view this tab.</div>
+            <div class="tab-main-content">
+                <div class="controls">
+                    <button onclick="loadServices()">🔄 Refresh Services</button>
+                </div>
+                <h2>Service Status for <span class="current-server-display">...</span></h2>
+                <input type="text" id="servicesFilter" class="filter-input" onkeyup="filterTable('servicesTable', 'servicesFilter')" placeholder="Filter services...">
+                <div id="servicesTable" class="loading">Loading...</div>
+            </div>
+        </div>
+
+        <div id="processes" class="tab-content">
+            <div class="select-server-message">Please select a specific server to view this tab.</div>
+            <div class="tab-main-content">
+                <div class="controls">
+                    <label for="processSortSelect">Sort by:</label>
+                    <select id="processSortSelect" onchange="loadProcesses()">
+                        <option value="cpu">CPU %</option>
+                        <option value="memory">Memory %</option>
+                        <option value="disk_write">Disk Write</option>
+                        <option value="disk_read">Disk Read</option>
+                    </select>
+                    <label for="processLimitSlider">Limit:</label>
+                    <input type="range" id="processLimitSlider" min="10" max="100" value="25" step="5" onchange="document.getElementById('processLimitValue').innerText = this.value; loadProcesses();">
+                    <span id="processLimitValue" style="font-weight: 600; min-width: 25px;">25</span>
+                    <button onclick="loadProcesses()">🔄 Refresh</button>
+                    <span class="refresh-timestamp" id="processes-refresh-time"></span>
+                    <button class="export-btn" onclick="exportTableToCSV('processesTable', 'processes.csv')">📥 Export CSV</button>
+                </div>
+                <div class="sub-tabs">
+                    <button class="sub-tab active" onclick="showProcessTab('processList', this)">Top List</button>
+                    <button class="sub-tab" onclick="showProcessTab('processTree', this)">🌳 Process Tree</button>
+                </div>
+                <div id="processList" class="sub-tab-content active">
+                    <h2>Top Processes on <span class="current-server-display">...</span></h2>
+                    <input type="text" id="processesFilter" class="filter-input" onkeyup="filterTable('processesTable', 'processesFilter')" placeholder="Filter processes...">
+                    <div id="processesTable" class="loading">Loading...</div>
+                </div>
+                <div id="processTree" class="sub-tab-content">
+                    <h2>Process Tree for <span class="current-server-display">...</span></h2>
+                    <div id="processTreeContainer" class="loading">Loading tree...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="connections" class="tab-content">
+            <div class="select-server-message">Please select a specific server to view this tab.</div>
+            <div class="tab-main-content">
+                <div class="controls">
+                    <button onclick="loadConnections()">🔄 Refresh</button>
+                    <button class="export-btn" onclick="exportTableToCSV('connectionsTable', 'connections.csv')">📥 Export CSV</button>
+                </div>
+                <h2>Active Connections on <span class="current-server-display">...</span></h2>
+                <p style="color: var(--text-color-light); margin-bottom: 15px;">Click on status badges to filter.</p>
+                <input type="text" id="connectionsFilter" class="filter-input" onkeyup="filterTable('connectionsTable', 'connectionsFilter')" placeholder="Filter connections...">
+                <div class="conn-summary" id="connSummary"></div>
+                <div id="connectionsTable" class="loading">Loading...</div>
+            </div>
+        </div>
+
+        <div id="logs" class="tab-content">
+            <div class="select-server-message">Please select a specific server to view this tab.</div>
+            <div class="tab-main-content">
+                <div class="controls">
+                    <label for="logFileSelect">Log File:</label>
+                    <select id="logFileSelect">
+                        <option value="">Monitor Log</option>
+                    </select>
+                    <button onclick="loadLogs(true)">View Logs</button>
+                    <button onclick="analyzeLogs()" title="Remote analysis not yet supported">🤖 Analyze (Local Only)</button>
+                </div>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" onclick="filterLogs(null, this)">All</button>
+                    <button class="filter-btn error" onclick="filterLogs('error', this)">Error</button>
+                    <button class="filter-btn warning" onclick="filterLogs('warning', this)">Warning</button>
+                    <button class="filter-btn info" onclick="filterLogs('info', this)">Info</button>
+                </div>
+                <div id="logAnalysis"></div>
+                <h3 style="margin-top: 20px;">Raw Logs from <span class="current-server-display">...</span></h3>
+                <div class="log-viewer" id="logsContent">Loading...</div>
+            </div>
+        </div>
+        
+        <div id="serverStatus" class="tab-content">
+            <div class="controls">
+                <button onclick="loadServerStatus()">🔄 Refresh</button>
+            </div>
+            <h2>📡 Server Status</h2>
+            <p style="color: var(--text-color-light); margin-bottom: 15px;">Status of all monitored servers based on last check-in.</p>
+            <div id="serverStatusContainer" class="server-status-grid loading">Loading...</div>
+        </div>
+        
+        <div id="settings" class="tab-content">
+            <h2>⚙️ Settings (Master Server)</h2>
+            <div class="settings-group">
+                <h3>Alert Thresholds</h3>
+                <div class="setting-item">
+                    <label for="cpuThreshold">CPU Warning (%)</label>
+                    <input type="range" id="cpuThreshold" min="1" max="100" value="80" oninput="document.getElementById('cpuThresholdValue').innerText = this.value + '%'">
+                    <span class="slider-value" id="cpuThresholdValue">80%</span>
+                </div>
+                <div class="setting-item">
+                    <label for="memoryThreshold">Memory Warning (%)</label>
+                    <input type="range" id="memoryThreshold" min="1" max="100" value="80" oninput="document.getElementById('memoryThresholdValue').innerText = this.value + '%'">
+                    <span class="slider-value" id="memoryThresholdValue">80%</span>
+                </div>
+                <div class="setting-item">
+                    <label for="diskThreshold">Disk Warning (%)</label>
+                    <input type="range" id="diskThreshold" min="1" max="100" value="90" oninput="document.getElementById('diskThresholdValue').innerText = this.value + '%'">
+                    <span class="slider-value" id="diskThresholdValue">90%</span>
+                </div>
+                 <div class="setting-item">
+                    <label for="tcpResetThreshold">TCP Reset Spike (RST/10s)</label>
+                    <input type="range" id="tcpResetThreshold" min="1" max="100" value="20" oninput="document.getElementById('tcpResetThresholdValue').innerText = this.value">
+                    <span class="slider-value" id="tcpResetThresholdValue">20</span>
+                </div>
+            </div>
+            <button onclick="saveSettings()">💾 Save Settings</button>
+            <span id="settingsSaveStatus" style="margin-left: 15px; color: var(--text-badge-success);"></span>
+        </div>
+
+        <div id="comparison" class="tab-content">
+            <h2>🖥️🖥️ Multi-Server Comparison</h2>
+            <div class="controls">
+                <label>Select Servers:</label>
+                <div id="comparisonServerSelect" class="checkbox-list"></div>
+                <button onclick="loadComparisonData()">Compare Servers</button>
+            </div>
+            <div id="comparisonTableContainer" class="loading">Select servers to compare.</div>
+        </div>
+
+    </div>
+
+    <div id="statusModal" class="modal-overlay" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Connection Status</h2>
+            <p id="modalDescription" style="font-size: 1.1rem;"></p>
+            
+            <div id="connectionDetails" style="display: none;">
+                <h4>Full Details</h4>
+                <p><strong>User:</strong> <span id="conn-user"></span></p>
+                <p><strong>Parent Process:</strong> <span id="conn-parent"></span></p>
+                <p><strong>Started:</strong> <span id="conn-started"></span></p>
+                <p><strong>Full Command:</strong> <code id="conn-cmdline"></code></p>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ============================================================
+// UNIFIED OPS DASHBOARD — FULL SCRIPT v15.3
+// Fixes: filterByPort, refreshRequests, exportAlertsToCSV,
+//        filterLogs, loadProcesses null-safety, loadSettings
+//        full-threshold support, dark mode multi-dataset,
+//        server status timestamps, kill process custom modal,
+//        connection color coding, toast notifications,
+//        keyboard shortcuts, auto-refresh countdown.
+// ============================================================
+let pollInterval = 15000;
+window.charts = {};
+
+let currentPortFilter = null;
+let currentStatusFilter = null;
+let currentLogLevelFilter = null;
+let currentPortScanFilter = 'all';
+let DEFAULT_CONNECTIONS_LIMIT = 100;
+let DEFAULT_REQUESTS_LIMIT = 100;
+let integrationURLs = { wazuh: '', zabbix: '', grafana: '' };
+let localHostname = 'localhost';
+let CURRENT_HOSTNAME = 'localhost';
+let allServers = [];
+let lastAlertCheckTimestamp = new Date(0).toISOString();
+let lastAlertTimestamp = new Date(0).toISOString();
+
+// Kill modal state
+let _killPid = null;
+let _killTree = false;
+
+// Countdown state
+let _countdownSecs = 15;
+let _countdownTimer = null;
+
+Chart.register(ChartZoom);
+
+// ============================================================
+// TOAST NOTIFICATIONS
+// ============================================================
+function showToast(message, type = 'info', duration = 4000) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = message;
+    container.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 350);
+    }, duration);
+}
+
+// ============================================================
+// KILL PROCESS MODAL
+// ============================================================
+function showKillModal(pid, name, killTree = false) {
+    _killPid = pid;
+    _killTree = killTree;
+    document.getElementById('killModalDesc').innerHTML =
+        `Are you sure you want to kill <strong>${name || ''} (PID: ${pid})</strong>?${
+            killTree ? '<br><em>This will also kill all child processes.</em>' : ''}` +
+        '<br>This action cannot be undone.';
+    document.getElementById('killConfirmBtn').onclick = () => _doKill();
+    document.getElementById('killModal').classList.add('show');
+}
+function closeKillModal() {
+    document.getElementById('killModal').classList.remove('show');
+    _killPid = null;
+}
+async function _doKill() {
+    if (!_killPid) return;
+    closeKillModal();
+    try {
+        const url = `/api/processes/kill?hostname=${encodeURIComponent(CURRENT_HOSTNAME)}`;
+        const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pid: _killPid, kill_tree: _killTree })
+        });
+        const data = await resp.json();
+        if (data.status === 'success') {
+            showToast(`✅ Process ${_killPid} killed.`, 'success');
+        } else {
+            showToast(`❌ Kill failed: ${data.message}`, 'error');
+        }
+        loadProcesses();
+    } catch (e) {
+        showToast(`❌ Error: ${e.message}`, 'error');
+    }
+}
+
+// ============================================================
+// AUTO-REFRESH COUNTDOWN
+// ============================================================
+function startCountdown(seconds) {
+    _countdownSecs = seconds;
+    const arc = document.getElementById('countdownArc');
+    const label = document.getElementById('countdownLabel');
+    const circumference = 69.12;
+    if (_countdownTimer) clearInterval(_countdownTimer);
+    _countdownTimer = setInterval(() => {
+        _countdownSecs = Math.max(0, _countdownSecs - 1);
+        const offset = circumference * (1 - _countdownSecs / seconds);
+        if (arc) arc.style.strokeDashoffset = offset;
+        if (label) label.textContent = `${_countdownSecs}s`;
+        if (_countdownSecs <= 0) { _countdownSecs = seconds; }
+    }, 1000);
+}
+
+// ============================================================
+// KEYBOARD SHORTCUTS
+// ============================================================
+document.addEventListener('keydown', (e) => {
+    // Skip if user is typing in an input
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+    const key = e.key.toLowerCase();
+    if (key === 'r') { refreshCurrentTab(); }
+    else if (key === 'd') { toggleDarkMode(); }
+    else if (!isNaN(key) && key >= '1' && key <= '9') {
+        const tabs = document.querySelectorAll('.tab');
+        const idx = parseInt(key) - 1;
+        if (tabs[idx]) tabs[idx].click();
+    }
+});
+
+function refreshCurrentTab() {
+    const activeTab = document.querySelector('.tab.active');
+    if (activeTab) {
+        const tabId = activeTab.getAttribute('data-tab-id');
+        loadTabData(tabId);
+        showToast('🔄 Refreshed!', 'info', 1500);
+    }
+}
+
+// ============================================================
+// MODAL & CONNECTION STATUS HELPERS
+// ============================================================
+const statusExplanations = {
+    'ESTABLISHED': '<strong>ESTABLISHED:</strong> The connection is active. Data can be transferred.',
+    'LISTEN':      '<strong>LISTEN:</strong> The server is waiting for an incoming connection.',
+    'TIME_WAIT':   '<strong>TIME_WAIT:</strong> Connection closed, waiting for lingering packets.',
+    'CLOSE_WAIT':  '<strong>CLOSE_WAIT:</strong> Remote end closed; waiting for local app to close.',
+    'CLOSED':      '<strong>CLOSED:</strong> Connection fully terminated.',
+    'TOTAL':       '<strong>TOTAL CONNECTIONS:</strong> All active network connections.'
+};
+
+function showModal(title, description) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalDescription').innerHTML = description;
+    document.getElementById('connectionDetails').style.display = 'none';
+    document.getElementById('statusModal').style.display = 'flex';
+}
+function showConnectionDetails(conn) {
+    document.getElementById('modalTitle').textContent = 'Connection Details';
+    document.getElementById('modalDescription').innerHTML = `
+        <strong>${conn.process || 'Unknown'} (${conn.pid})</strong><br>
+        <strong>Local:</strong> ${conn.local}<br>
+        <strong>Remote:</strong> ${conn.remote}<br>
+        <strong>Status:</strong> ${conn.status}
+    `;
+    document.getElementById('conn-user').textContent = conn.user || 'N/A';
+    document.getElementById('conn-parent').textContent = conn.parent_process || 'N/A';
+    document.getElementById('conn-started').textContent = formatTimestamp(conn.started);
+    document.getElementById('conn-cmdline').textContent = conn.cmdline || 'N/A';
+    document.getElementById('connectionDetails').style.display = 'block';
+    document.getElementById('statusModal').style.display = 'flex';
+}
+function closeModal() {
+    document.getElementById('statusModal').style.display = 'none';
+}
+function showStatusHelp(status) {
+    event.stopPropagation();
+    const description = statusExplanations[status] || 'No description available.';
+    showModal(status, description);
+}
+
+// ============================================================
+// ALERT BADGE POLLING
+// ============================================================
+async function checkAlertCount() {
+    try {
+        try {
+            const h = await fetch('/api/health');
+            if (!h.ok) throw new Error('Health returned ' + h.status);
+            const health = await h.json();
+            const banner = document.getElementById('serverErrorBanner');
+            if (!health || !health.monitoring_active) {
+                banner.style.display = 'block';
+                banner.style.background = 'linear-gradient(90deg,#f8d7da,#fff3cd)';
+                banner.style.color = '#2b2b2b';
+                banner.innerHTML = '⚠️ Backend monitoring threads not active. Restart the dashboard.';
+            } else {
+                banner.style.display = 'none';
+            }
+        } catch (healthErr) {
+            const banner = document.getElementById('serverErrorBanner');
+            banner.style.display = 'block';
+            banner.style.background = 'linear-gradient(90deg,#f8d7da,#f5c6cb)';
+            banner.style.color = '#7f1d1d';
+            banner.innerHTML = `❌ Backend unreachable: ${healthErr.message}.`;
+            return;
+        }
+        const url = `/api/alerts/count?since=${lastAlertCheckTimestamp}`;
+        const r = await fetch(url);
+        const data = await r.json();
+        const count = data.new_alerts || 0;
+        const badge = document.getElementById('alertBadge');
+        if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = 'inline-block';
+            showToast(`🚨 ${count} new alert${count > 1 ? 's' : ''}`, 'warning', 5000);
+        } else {
+            badge.style.display = 'none';
+        }
+    } catch (e) {
+        console.error('checkAlertCount error:', e);
+    }
+}
+
+// ============================================================
+// DARK MODE
+// ============================================================
+function toggleDarkMode() {
+    const body = document.body;
+    const toggle = document.getElementById('darkModeToggle');
+    body.classList.toggle('dark-mode');
+    const isDark = body.classList.contains('dark-mode');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    toggle.textContent = isDark ? '☀️' : '🌙';
+
+    // Update chart defaults and ALL charts (including multi-dataset)
+    Chart.defaults.color = isDark ? '#ccc' : '#666';
+    Chart.defaults.borderColor = isDark ? '#444' : '#ddd';
+    Object.values(window.charts).forEach(chart => {
+        if (!chart) return;
+        try {
+            chart.options.scales.x.ticks.color = Chart.defaults.color;
+            chart.options.scales.y.ticks.color = Chart.defaults.color;
+            chart.options.scales.y.grid.color = Chart.defaults.borderColor;
+            chart.options.scales.x.grid.color = Chart.defaults.borderColor;
+            chart.update('none');
+        } catch (e) {}
+    });
+}
+
+// ============================================================
+// GLOBAL SERVER CONTROL
+// ============================================================
+function onGlobalServerChange() {
+    const select = document.getElementById('globalServerSelect');
+    CURRENT_HOSTNAME = select.value;
+    document.querySelectorAll('.current-server-display').forEach(span => {
+        span.textContent = (CURRENT_HOSTNAME === 'all') ? 'All Servers' : CURRENT_HOSTNAME;
+    });
+    updateStats();
+    const activeTab = document.querySelector('.tab.active');
+    if (activeTab) loadTabData(activeTab.getAttribute('data-tab-id'));
+}
+
+// ============================================================
+// TAB NAVIGATION
+// ============================================================
+function showTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(tabName).classList.add('active');
+    document.querySelector(`.tab[data-tab-id="${tabName}"]`).classList.add('active');
+    if (tabName === 'alerts') {
+        const nowUTC = new Date().toISOString();
+        lastAlertTimestamp = nowUTC;
+        lastAlertCheckTimestamp = nowUTC;
+        checkAlertCount();
+    }
+    loadTabData(tabName);
+}
+function showProcessTab(tabName, element) {
+    document.querySelectorAll('#processes .sub-tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#processes .sub-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(tabName).classList.add('active');
+    element.classList.add('active');
+    if (tabName === 'processTree') loadProcessTree(); else loadProcesses();
+}
+function showWazuhTab(tabName, element) {
+    document.querySelectorAll('#wazuh .sub-tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#wazuh .sub-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(tabName).classList.add('active');
+    element.classList.add('active');
+    if (tabName === 'wazuhAgents') loadWazuhAgents();
+    else if (tabName === 'wazuhAlerts') loadWazuhAlerts();
+    else loadWazuhSummary();
+}
+function showZabbixTab(tabName, element) {
+    document.querySelectorAll('#zabbix .sub-tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#zabbix .sub-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(tabName).classList.add('active');
+    element.classList.add('active');
+    if (tabName === 'zabbixProblems') loadZabbixProblems();
+    else if (tabName === 'zabbixTriggers') loadZabbixTriggers();
+    else loadZabbixSummary();
+}
+
+// ============================================================
+// FORMATTERS
+// ============================================================
+function formatUptime(seconds) {
+    if (!seconds && seconds !== 0) return '--';
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    return `${days}d ${hours}h ${mins}m`;
+}
+function formatRelativeTime(isoString) {
+    if (!isoString || isoString === 'Never' || isoString === 'Error') return isoString;
+    try {
+        const diff = (Date.now() - new Date(isoString).getTime()) / 1000;
+        if (diff < 60) return `${Math.floor(diff)}s ago`;
+        if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+        return `${Math.floor(diff / 86400)}d ago`;
+    } catch(e) { return isoString; }
+}
+function formatBytes(bytes) {
+    if (!bytes && bytes !== 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(Math.max(bytes, 1)) / Math.log(k));
+    return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+}
+function formatTimestamp(timestamp) {
+    if (!timestamp || timestamp === '?' || timestamp === 'Never') return 'N/A';
+    try {
+        const date = new Date(typeof timestamp === 'number' ? timestamp * 1000 : timestamp);
+        if (isNaN(date.getTime())) return 'Invalid Date';
+        return date.toLocaleString();
+    } catch (e) { return String(timestamp); }
+}
+function showError(message, elementId = null) {
+    console.error('❌', message);
+    if (elementId) {
+        const el = document.getElementById(elementId);
+        if (el) el.innerHTML = `<div class="alert error">${message}</div>`;
+    }
+}
+
+// ============================================================
+// DATA LOADERS
+// ============================================================
+async function updateStats() {
+    try {
+        const host = (CURRENT_HOSTNAME === 'all') ? localHostname : CURRENT_HOSTNAME;
+        const url = `/api/stats?hostname=${encodeURIComponent(host)}`;
+        const response = await fetch(url);
+        if (!response.ok) { const err = await response.json(); throw new Error(err.detail || 'Stats API ' + response.status); }
+        const data = await response.json();
+        if (data.error) {
+            ['cpuStat','memoryStat','diskStat','uptimeStat','appCpu','appMem','connStat']
+                .forEach(id => { document.getElementById(id).textContent = 'ERR'; });
+            document.getElementById('hostnameDisplay').textContent = data.hostname;
+            document.getElementById('userList').innerHTML = '<span>ERR</span>';
+            return;
+        }
+        document.getElementById('cpuStat').textContent    = `${(data.cpu || 0).toFixed(1)}%`;
+        document.getElementById('memoryStat').textContent = `${(data.memory || 0).toFixed(1)}%`;
+        document.getElementById('diskStat').textContent   = `${(data.disk || 0).toFixed(1)}%`;
+        document.getElementById('uptimeStat').textContent = formatUptime(data.uptime || 0);
+        document.getElementById('appCpu').textContent     = `${(data.app_cpu || 0).toFixed(2)}%`;
+        document.getElementById('appMem').textContent     = `${(data.app_memory || 0).toFixed(2)}%`;
+        document.getElementById('connStat').textContent   = data.total_connections || 0;
+        document.getElementById('hostnameDisplay').textContent = data.hostname || 'localhost';
+        const sniffBadge = document.getElementById('sniffBadge');
+        sniffBadge.textContent = `📡 Packet Sniffing: ${data.packet_sniffing_enabled ? 'ON' : 'OFF'}`;
+        sniffBadge.style.background = data.packet_sniffing_enabled ? '#fff3cd' : '#d4edda';
+        const userList = document.getElementById('userList');
+        userList.innerHTML = (data.logged_in_users && data.logged_in_users.length > 0)
+            ? data.logged_in_users.map(u => `<span class="user-badge">${u}</span>`).join('')
+            : '<span style="font-size:1rem">None</span>';
+    } catch (e) { console.error('updateStats:', e.message); }
+}
+
+async function updateMetrics() {
+    try {
+        const host = (CURRENT_HOSTNAME === 'all') ? localHostname : CURRENT_HOSTNAME;
+        const range = document.getElementById('timelineSelect').value;
+        const response = await fetch(`/api/metrics?range=${range}&hostname=${encodeURIComponent(host)}`);
+        if (!response.ok) throw new Error('Metrics ' + response.status);
+        const data = await response.json();
+        if (!data || data.length === 0) { updateChartsWithData([], [], [], [], [], [], [], []); return; }
+        const labels     = data.map(d => new Date(d.timestamp).toLocaleTimeString());
+        const cpuData    = data.map(d => d.cpu || 0);
+        const memoryData = data.map(d => d.memory || 0);
+        const netSent    = data.map(d => d.net_sent_rate || 0);
+        const netRecv    = data.map(d => d.net_recv_rate || 0);
+        const diskRead   = data.map(d => d.disk_read_rate || 0);
+        const diskWrite  = data.map(d => d.disk_write_rate || 0);
+        const reqsData   = data.map(d => d.requests || 0);
+        updateChartsWithData(labels, cpuData, memoryData, netSent, netRecv, diskRead, diskWrite, reqsData);
+    } catch (e) { console.error('updateMetrics error', e); }
+}
+
+function updateChartsWithData(labels, cpuData, memoryData, netSent, netRecv, diskRead, diskWrite, requestsData) {
+    const checkNoData = (chartId, data) => {
+        const el = document.getElementById(`${chartId}-no-data`);
+        if (el) el.style.display = (!data || data.length === 0) ? 'flex' : 'none';
+    };
+    const isDark = document.body.classList.contains('dark-mode');
+    Chart.defaults.color = isDark ? '#ccc' : '#666';
+    Chart.defaults.borderColor = isDark ? '#444' : '#ddd';
+    const chartOptions = {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+            y: { beginAtZero: true, grid: { color: Chart.defaults.borderColor }, ticks: { color: Chart.defaults.color } },
+            x: { grid: { color: Chart.defaults.borderColor }, ticks: { color: Chart.defaults.color } }
+        },
+        animation: false,
+        plugins: {
+            zoom: {
+                pan:  { enabled: true, mode: 'x' },
+                zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
+            }
+        }
+    };
+    const updateOrCreate = (id, label, data, color) => {
+        checkNoData(id, data);
+        if (window.charts[id]) {
+            window.charts[id].data.labels = labels;
+            window.charts[id].data.datasets[0].data = data;
+            window.charts[id].update('none');
+        } else {
+            window.charts[id] = new Chart(id, {
+                type: 'line',
+                data: { labels, datasets: [{ label, data, borderColor: color, backgroundColor: color + '1A', fill: true, tension: 0.4 }] },
+                options: chartOptions
+            });
+        }
+    };
+    updateOrCreate('cpuChart',      'CPU (%)',    cpuData,    '#667eea');
+    updateOrCreate('memoryChart',   'Memory (%)', memoryData, '#764ba2');
+    updateOrCreate('requestsChart', 'Requests',   requestsData, '#dc3545');
+    // Multi-dataset charts
+    const updateMulti = (id, datasets) => {
+        checkNoData(id, datasets[0].data);
+        if (window.charts[id]) {
+            window.charts[id].data.labels = labels;
+            datasets.forEach((ds, i) => { window.charts[id].data.datasets[i].data = ds.data; });
+            window.charts[id].update('none');
+        } else {
+            window.charts[id] = new Chart(id, { type: 'line', data: { labels, datasets }, options: chartOptions });
+        }
+    };
+    updateMulti('networkChart', [
+        { label: 'Sent (KB/s)',  data: netSent,   borderColor: '#28a745', tension: 0.4 },
+        { label: 'Recv (KB/s)',  data: netRecv,   borderColor: '#17a2b8', tension: 0.4 }
+    ]);
+    updateMulti('diskChart', [
+        { label: 'Read (KB/s)',  data: diskRead,  borderColor: '#ffc107', tension: 0.4 },
+        { label: 'Write (KB/s)', data: diskWrite, borderColor: '#fd7e14', tension: 0.4 }
+    ]);
+}
+
+function resetAllChartsZoom() {
+    Object.values(window.charts).forEach(chart => {
+        if (chart && chart.resetZoom) { try { chart.resetZoom(); } catch (e) {} }
+    });
+}
+function refreshOverview() { updateStats(); updateMetrics(); }
+
+// ============================================================
+// WAZUH & ZABBIX
+// ============================================================
+function refreshWazuh() {
+    const active = document.querySelector('#wazuh .sub-tab.active');
+    if (active && active.getAttribute('onclick').includes('wazuhAgents')) loadWazuhAgents();
+    else if (active && active.getAttribute('onclick').includes('wazuhAlerts')) loadWazuhAlerts();
+    else loadWazuhSummary();
+}
+function refreshZabbix() {
+    const active = document.querySelector('#zabbix .sub-tab.active');
+    if (active && active.getAttribute('onclick').includes('zabbixProblems')) loadZabbixProblems();
+    else if (active && active.getAttribute('onclick').includes('zabbixTriggers')) loadZabbixTriggers();
+    else loadZabbixSummary();
+}
+async function loadWazuhSummary() {
+    const el = document.getElementById('wazuhSummary');
+    el.innerHTML = '<div class="loading">Loading summary...</div>';
+    const r = await fetch('/api/wazuh/stats');
+    const d = await r.json();
+    if (d.error) { el.innerHTML = `<div class="alert error">${d.error}</div>`; return; }
+    el.innerHTML = `<h3>Agent Summary</h3><div class="log-summary">
+        <div class="log-stat"><h4>Total Agents</h4><div class="number">${(d.agents && d.agents.total) || 0}</div></div>
+        <div class="log-stat"><h4>Active</h4><div class="number" style="color:#28a745">${(d.agents && d.agents.active) || 0}</div></div>
+        <div class="log-stat"><h4>Disconnected</h4><div class="number" style="color:#dc3545">${(d.agents && d.agents.disconnected) || 0}</div></div>
+    </div>`;
+}
+async function loadWazuhAgents() {
+    const el = document.getElementById('wazuhAgents');
+    el.innerHTML = '<div class="loading">Loading agents...</div>';
+    try {
+        const r = await fetch('/api/wazuh/agents');
+        const all = await r.json();
+        const select = document.getElementById('wazuhServerSelect');
+        const cur = select.value;
+        select.innerHTML = '<option value="all">All Agents</option>' +
+            (all || []).map(a => `<option value="${a.id}">${a.name || `Agent ${a.id}`}</option>`).join('');
+        select.value = cur;
+        const data = (select.value === 'all') ? all : all.filter(a => a.id === select.value);
+        if (!data || !data.length) { el.innerHTML = '<div class="loading">No agents found.</div>'; return; }
+        el.innerHTML = '<table><thead><tr><th>Name</th><th>ID</th><th>IP</th><th>Status</th><th>Version</th></tr></thead><tbody>' +
+            data.map(a => `<tr><td>${a.name}</td><td>${a.id}</td><td>${a.ip}</td><td><span class="badge ${a.status === 'active' ? 'success' : 'danger'}">${a.status}</span></td><td>${a.version}</td></tr>`).join('') +
+            '</tbody></table>';
+    } catch(e) { showError(e.message, 'wazuhAgents'); }
+}
+async function loadWazuhAlerts() {
+    const el = document.getElementById('wazuhAlerts');
+    el.innerHTML = '<div class="loading">Loading alerts...</div>';
+    try {
+        const server = document.getElementById('wazuhServerSelect').value;
+        const url = (server !== 'all') ? `/api/wazuh/alerts?agent=${encodeURIComponent(server)}` : '/api/wazuh/alerts';
+        const data = await (await fetch(url)).json();
+        if (!data || !data.length) { el.innerHTML = '<div class="loading">No recent alerts.</div>'; return; }
+        el.innerHTML = '<table><thead><tr><th>Time</th><th>Agent</th><th>Level</th><th>Description</th></tr></thead><tbody>' +
+            data.slice(0, 50).map(alert => {
+                const levelClass = (alert.rule && alert.rule.level >= 10) ? 'danger' : (alert.rule && alert.rule.level >= 7 ? 'warning' : 'info');
+                return `<tr><td>${formatTimestamp(alert.timestamp)}</td><td>${alert.agent.name}</td><td><span class="badge ${levelClass}">${alert.rule.level}</span></td><td>${alert.rule.description}</td></tr>`;
+            }).join('') + '</tbody></table>';
+    } catch(e) { showError(e.message, 'wazuhAlerts'); }
+}
+async function loadZabbixSummary() {
+    const el = document.getElementById('zabbixSummary');
+    el.innerHTML = '<div class="loading">Loading...</div>';
+    const d = await (await fetch('/api/zabbix/stats')).json();
+    if (d.error) { el.innerHTML = `<div class="alert error">${d.error}</div>`; return; }
+    el.innerHTML = `<h3>Host Summary</h3><div class="log-summary">
+        <div class="log-stat"><h4>Total Hosts</h4><div class="number">${d.total_hosts || 0}</div></div>
+        <div class="log-stat"><h4>Active</h4><div class="number" style="color:#28a745">${d.active_hosts || 0}</div></div>
+    </div>`;
+}
+async function loadZabbixProblems() {
+    const el = document.getElementById('zabbixProblems');
+    el.innerHTML = '<div class="loading">Loading...</div>';
+    try {
+        const data = await (await fetch('/api/zabbix/problems')).json();
+        if (!data || !data.length) { el.innerHTML = '<div class="loading">No active problems.</div>'; return; }
+        el.innerHTML = '<table><thead><tr><th>Time</th><th>Severity</th><th>Problem</th></tr></thead><tbody>' +
+            data.map(p => `<tr><td>${formatTimestamp(p.clock)}</td><td>${p.severity}</td><td>${p.name}</td></tr>`).join('') +
+            '</tbody></table>';
+    } catch(e) { showError(e.message, 'zabbixProblems'); }
+}
+async function loadZabbixTriggers() {
+    const el = document.getElementById('zabbixTriggers');
+    el.innerHTML = '<div class="loading">Loading...</div>';
+    try {
+        const data = await (await fetch('/api/zabbix/triggers')).json();
+        if (!data || !data.length) { el.innerHTML = '<div class="loading">No triggers.</div>'; return; }
+        el.innerHTML = '<table><thead><tr><th>Description</th><th>Status</th><th>Priority</th></tr></thead><tbody>' +
+            data.slice(0, 50).map(t => `<tr><td>${t.description}</td><td>${t.value}</td><td>${t.priority}</td></tr>`).join('') +
+            '</tbody></table>';
+    } catch(e) { showError(e.message, 'zabbixTriggers'); }
+}
+
+// ============================================================
+// TAB VISIBILITY HELPER
+// ============================================================
+function toggleTabContentView(tabId, showContent) {
+    const tab = document.getElementById(tabId);
+    if (!tab) return;
+    const msg  = tab.querySelector('.select-server-message');
+    const cont = tab.querySelector('.tab-main-content');
+    if (!msg || !cont) return;
+    msg.style.display  = showContent ? 'none'  : 'block';
+    cont.style.display = showContent ? 'block' : 'none';
+}
+
+async function loadTabData(tabId) {
+    if (tabId === 'wazuh')       { await refreshWazuh();       return; }
+    if (tabId === 'zabbix')      { await refreshZabbix();      return; }
+    if (tabId === 'serverStatus'){ await loadServerStatus();   return; }
+    if (tabId === 'settings')    { await loadSettings();       return; }
+    if (tabId === 'comparison')  { await loadComparisonData(false); return; }
+    if (tabId === 'grafana')     { reloadGrafana();            return; }
+    if (tabId === 'alerts') { toggleTabContentView(tabId, true); await loadAlerts(); return; }
+    if (CURRENT_HOSTNAME === 'all') { toggleTabContentView(tabId, false); return; }
+    toggleTabContentView(tabId, true);
+    if (tabId === 'overview')     await refreshOverview();
+    if (tabId === 'requests')     await refreshRequests();
+    if (tabId === 'services')     await loadServices();
+    if (tabId === 'processes') {
+        const active = document.querySelector('#processes .sub-tab.active');
+        if (active && active.getAttribute('onclick').includes('processTree')) await loadProcessTree();
+        else await loadProcesses();
+    }
+    if (tabId === 'connections')  await loadConnections();
+    if (tabId === 'logs') { await loadLogFiles(); await loadLogs(true); }
+}
+
+// ============================================================
+// DATA LOADERS — REQUESTS
+// ============================================================
+async function loadRequests(limit = null) {
+    const el = document.getElementById('requestsTable');
+    el.innerHTML = '<div class="loading">Loading...</div>';
+    try {
+        const useLimit = limit || DEFAULT_REQUESTS_LIMIT;
+        let url = `/api/requests?hostname=${encodeURIComponent(CURRENT_HOSTNAME)}&limit=${useLimit}`;
+        if (currentPortFilter) url += `&port=${currentPortFilter}`;
+        const data = await (await fetch(url)).json();
+        if (!data || !data.length) { el.innerHTML = '<div class="loading">No requests yet.</div>'; return; }
+        el.innerHTML = '<table><thead><tr><th>Time</th><th>Proto</th><th>Port</th><th>Method</th><th>Path</th><th>Status</th><th>IP</th></tr></thead><tbody>' +
+            data.map(req => `<tr><td>${formatTimestamp(req.timestamp)}</td><td>${req.protocol}</td><td>${req.dst_port}</td><td>${req.method}</td><td>${req.path}</td><td>${req.status}</td><td>${req.src_ip}</td></tr>`).join('') +
+            '</tbody></table>';
+    } catch(e) { showError(e.message, 'requestsTable'); }
+}
+
+// FIX: refreshRequests was referenced but never defined
+async function refreshRequests() {
+    document.getElementById('requests-refresh-time').textContent = `Last: ${new Date().toLocaleTimeString()}`;
+    await loadRequests();
+}
+
+// FIX: filterByPort was called from onchange but never defined
+function filterByPort(value) {
+    currentPortFilter = value || null;
+    loadRequests();
+}
+
+// ============================================================
+// DATA LOADERS — ALERTS
+// ============================================================
+async function loadAlerts() {
+    const el = document.getElementById('alertsList');
+    el.innerHTML = '<div class="loading">Loading...</div>';
+    try {
+        const url = `/api/alerts?hostname=${encodeURIComponent(CURRENT_HOSTNAME)}`;
+        const data = await (await fetch(url)).json();
+        if (!data || !data.length) { el.innerHTML = '<div class="loading">No alerts.</div>'; return; }
+        el.innerHTML = data.map(a =>
+            `<div class="alert ${a.level || 'warning'}">
+                <strong>${(a.level || 'WARN').toUpperCase()}</strong>
+                ${a.hostname ? `<span style="margin-left:8px;font-size:0.85em;opacity:0.7">[${a.hostname}]</span>` : ''}
+                — ${formatTimestamp(a.timestamp)}<br>${a.message}
+            </div>`
+        ).join('');
+    } catch(e) { showError(e.message, 'alertsList'); }
+}
+
+// FIX: exportAlertsToCSV was called but never defined
+function exportAlertsToCSV(containerId, filename) {
+    const alerts = document.querySelectorAll(`#${containerId} .alert`);
+    if (!alerts.length) { showToast('No alerts to export.', 'warning'); return; }
+    let csv = 'Level,Timestamp,Message\n';
+    alerts.forEach(a => {
+        const text = a.textContent.replace(/\n/g, ' ').replace(/"/g, '""');
+        csv += `"${text}"\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+    showToast('✅ Alerts exported!', 'success');
+}
+
+// ============================================================
+// DATA LOADERS — SERVICES
+// ============================================================
+async function loadServices() {
+    const el = document.getElementById('servicesTable');
+    el.innerHTML = '<div class="loading">Loading...</div>';
+    try {
+        const data = await (await fetch(`/api/services?hostname=${encodeURIComponent(CURRENT_HOSTNAME)}`)).json();
+        if (!data || !data.length) { el.innerHTML = '<div class="loading">No services found.</div>'; return; }
+        el.innerHTML = '<table><thead><tr><th>Service Name</th><th>Status</th></tr></thead><tbody>' +
+            data.map(s => `<tr><td>${s.name}</td><td><span class="badge ${s.status === 'active' ? 'success' : 'danger'}">${s.status}</span></td></tr>`).join('') +
+            '</tbody></table>';
+    } catch(e) { showError(e.message, 'servicesTable'); }
+}
+
+// ============================================================
+// DATA LOADERS — PROCESSES
+// ============================================================
+async function loadProcesses() {
+    const el = document.getElementById('processesTable');
+    el.innerHTML = '<div class="loading">Loading...</div>';
+    try {
+        const sort_by = document.getElementById('processSortSelect').value;
+        const limit   = document.getElementById('processLimitSlider').value;
+        const data    = await (await fetch(`/api/processes?hostname=${encodeURIComponent(CURRENT_HOSTNAME)}&sort_by=${sort_by}&limit=${limit}`)).json();
+        // FIX: Null-safety for cpu/memory when data comes from remote agent
+        el.innerHTML = '<table><thead><tr><th>PID</th><th>Name</th><th>CPU %</th><th>Memory %</th><th>Actions</th></tr></thead><tbody>' +
+            data.map(p => `
+                <tr>
+                    <td>${p.pid}</td>
+                    <td>${p.name}</td>
+                    <td>${(p.cpu != null ? p.cpu : p.cpu_percent != null ? p.cpu_percent : 0).toFixed(1)}%</td>
+                    <td>${(p.memory != null ? p.memory : p.memory_percent != null ? p.memory_percent : 0).toFixed(1)}%</td>
+                    <td>
+                        <button class="proc-actions" onclick="showKillModal(${p.pid},'${(p.name||'').replace(/'/g,'')}')">Kill</button>
+                        <button class="proc-actions kill-tree" onclick="showKillModal(${p.pid},'${(p.name||'').replace(/'/g,'')}',true)">Kill Tree</button>
+                    </td>
+                </tr>`).join('') +
+            '</tbody></table>';
+        document.getElementById('processes-refresh-time').textContent = `Last: ${new Date().toLocaleTimeString()}`;
+    } catch(e) { showError(e.message, 'processesTable'); }
+}
+
+async function loadProcessTree() {
+    const el = document.getElementById('processTreeContainer');
+    el.innerHTML = '<div class="loading">Loading tree...</div>';
+    try {
+        const procs = await (await fetch(`/api/processes?hostname=${encodeURIComponent(CURRENT_HOSTNAME)}&limit=1000`)).json();
+        if (!procs || !procs.length) { el.innerHTML = '<div class="loading">No process data.</div>'; return; }
+        const procMap = new Map();
+        const tree = {};
+        procs.forEach(p => procMap.set(p.pid, { ...p, children: [] }));
+        procMap.forEach(p => {
+            const parent = procMap.get(p.ppid);
+            if (parent && p.ppid !== p.pid) parent.children.push(p);
+            else tree[p.pid] = p;
+        });
+        const renderNode = (node) => {
+            let html = `<li><strong>${node.name}</strong> <span class="proc-meta">(PID: ${node.pid})</span>
+                <span class="proc-actions">
+                    <button onclick="showKillModal(${node.pid},'${(node.name||'').replace(/'/g,'')}')">Kill</button>
+                </span>`;
+            if (node.children.length > 0) {
+                html += '<ul>' + node.children.map(renderNode).join('') + '</ul>';
+            }
+            return html + '</li>';
+        };
+        el.innerHTML = '<ul>' + Object.values(tree).map(renderNode).join('') + '</ul>';
+    } catch(e) { showError(e.message, 'processTreeContainer'); }
+}
+
+// LEGACY: killProcess now delegates to showKillModal
+function killProcess(pid, killTree = false) {
+    showKillModal(pid, String(pid), killTree);
+}
+
+// ============================================================
+// DATA LOADERS — CONNECTIONS
+// ============================================================
+async function loadConnections(limit = null) {
+    const el = document.getElementById('connectionsTable');
+    el.innerHTML = '<div class="loading">Loading...</div>';
+    try {
+        const useLimit = limit || DEFAULT_CONNECTIONS_LIMIT;
+        let url = `/api/connections?hostname=${encodeURIComponent(CURRENT_HOSTNAME)}&limit=${useLimit}`;
+        if (currentStatusFilter) url += `&status=${encodeURIComponent(currentStatusFilter)}`;
+        const data = await (await fetch(url)).json();
+        // FIX: Connection status color coding via CSS class
+        el.innerHTML = '<table><thead><tr><th>Local</th><th>Remote</th><th>Status</th><th>PID</th></tr></thead><tbody>' +
+            data.map(conn => `
+                <tr class="clickable-row conn-${conn.status}" onclick='showConnectionDetails(${JSON.stringify(conn)})'>
+                    <td>${conn.local}</td>
+                    <td>${conn.remote}</td>
+                    <td><span class="badge ${conn.status === 'ESTABLISHED' ? 'success' : conn.status === 'LISTEN' ? 'info' : 'warning'}">${conn.status}</span></td>
+                    <td>${conn.pid || '-'}</td>
+                </tr>`).join('') +
+            '</tbody></table>';
+    } catch(e) { showError(e.message, 'connectionsTable'); }
+}
+
+// ============================================================
+// DATA LOADERS — LOGS
+// ============================================================
+async function loadLogFiles() {
+    try {
+        const d = await (await fetch(`/api/log-files?hostname=${encodeURIComponent(CURRENT_HOSTNAME)}`)).json();
+        const sel = document.getElementById('logFileSelect');
+        sel.innerHTML = (d.log_files || []).map(k => `<option value="${k}">${k}</option>`).join('') ||
+            '<option value="">Monitor Log</option>';
+    } catch(e) { console.error(e); }
+}
+async function loadLogs(resetFilter = true) {
+    const el = document.getElementById('logsContent');
+    el.innerHTML = '<div class="loading">Loading...</div>';
+    try {
+        const lf = document.getElementById('logFileSelect').value;
+        let url = `/api/logs?hostname=${encodeURIComponent(CURRENT_HOSTNAME)}`;
+        if (lf) url += `&file=${encodeURIComponent(lf)}`;
+        if (currentLogLevelFilter) url += `&level=${currentLogLevelFilter}`;
+        const data = await (await fetch(url)).json();
+        el.innerHTML = (data.logs || []).slice().reverse().map(log =>
+            `<div class="log-line ${log.level}">${log.line}</div>`
+        ).join('') || '<div class="log-line info">No log entries.</div>';
+    } catch(e) { showError(e.message, 'logsContent'); }
+}
+
+// FIX: filterLogs was called from buttons but never defined
+function filterLogs(level, element) {
+    document.querySelectorAll('.filter-btn.info, .filter-btn.error, .filter-btn.warning, .filter-btn.active').forEach(b => b.classList.remove('active'));
+    if (element) element.classList.add('active');
+    currentLogLevelFilter = level;
+    loadLogs(false);
+}
+
+async function analyzeLogs() {
+    const el = document.getElementById('logAnalysis');
+    el.innerHTML = '<div class="ai-analysis"><h3>🤖 Analyzing...</h3></div>';
+    try {
+        const lf = document.getElementById('logFileSelect').value;
+        const url = `/api/log-analysis?file=${encodeURIComponent(lf)}&hostname=${encodeURIComponent(CURRENT_HOSTNAME)}`;
+        const a = await (await fetch(url)).json();
+        if (a.error) { el.innerHTML = `<div class="alert error">${a.error}</div>`; return; }
+        const score = a.health_score ?? 100;
+        const barColor = score > 70 ? '#28a745' : score > 40 ? '#ffc107' : '#dc3545';
+        el.innerHTML = `<div class="ai-analysis">
+            <h3>🤖 Log Analysis Results</h3>
+            <div class="log-summary">
+                <div class="log-stat"><h4>Errors</h4><div class="number" style="color:#dc3545">${a.errors}</div></div>
+                <div class="log-stat"><h4>Warnings</h4><div class="number" style="color:#ffc107">${a.warnings}</div></div>
+                <div class="log-stat"><h4>Info</h4><div class="number">${a.info}</div></div>
+                <div class="log-stat"><h4>Health Score</h4><div class="number" style="color:${barColor}">${score}</div>
+                    <div class="log-health-bar"><div class="log-health-fill" style="width:${score}%;background:${barColor}"></div></div>
+                </div>
+            </div>
+            ${a.top_errors && a.top_errors.length > 0 ? `<h4 style="margin-top:15px">Top Errors</h4>` +
+                a.top_errors.map(e => `<div class="insight critical"><div class="insight-message">${e}</div></div>`).join('') : ''}
+        </div>`;
+    } catch(e) { showError(e.message, 'logAnalysis'); }
+}
+
+// ============================================================
+// DATA LOADERS — SERVER STATUS
+// ============================================================
+async function loadServerStatus() {
+    const el = document.getElementById('serverStatusContainer');
+    el.innerHTML = '<div class="loading">Checking server status...</div>';
+    try {
+        const data = await (await fetch('/api/server-status')).json();
+        // FIX: Show human-readable relative timestamps, with ping
+        el.innerHTML = data.map(server => `
+            <div class="server-status-card">
+                <div class="server-status-info">${server.hostname}
+                    <span class="last-seen">
+                        Last seen: ${formatRelativeTime(server.last_seen)}
+                        &nbsp;|&nbsp; ${formatTimestamp(server.last_seen)}
+                    </span>
+                </div>
+                <div class="server-status-badge ${server.status}">${server.status}</div>
+            </div>`).join('');
+    } catch(e) { showError(e.message, 'serverStatusContainer'); }
+}
+
+// ============================================================
+// DATA LOADERS — SETTINGS
+// ============================================================
+async function loadSettings() {
+    try {
+        const data = await (await fetch('/api/config/alerts')).json();
+        // FIX: Restore ALL three sliders, not just CPU
+        const set = (id, valId, val, suffix = '%') => {
+            const el = document.getElementById(id);
+            const vEl = document.getElementById(valId);
+            if (el && val != null) { el.value = val; if (vEl) vEl.textContent = val + suffix; }
+        };
+        set('cpuThreshold',    'cpuThresholdValue',    data.cpu_threshold    || 80);
+        set('memoryThreshold', 'memoryThresholdValue', data.memory_threshold || 80);
+        set('diskThreshold',   'diskThresholdValue',   data.disk_threshold   || 90);
+        set('tcpResetThreshold','tcpResetThresholdValue', data.tcp_reset_threshold || 20, '');
+    } catch(e) { console.error('loadSettings:', e); }
+}
+
+async function saveSettings() {
+    try {
+        // FIX: Send all 4 configurable thresholds, not just CPU
+        const settings = {
+            cpu_threshold:    parseInt(document.getElementById('cpuThreshold').value),
+            memory_threshold: parseInt(document.getElementById('memoryThreshold').value),
+            disk_threshold:   parseInt(document.getElementById('diskThreshold').value),
+            tcp_reset_threshold: parseInt(document.getElementById('tcpResetThreshold').value)
+        };
+        const r = await fetch('/api/config/alerts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settings)
+        });
+        const result = await r.json();
+        if (result.status === 'success') {
+            showToast('✅ Settings saved successfully!', 'success');
+            document.getElementById('settingsSaveStatus').textContent = '✅ Saved!';
+            setTimeout(() => { document.getElementById('settingsSaveStatus').textContent = ''; }, 3000);
+        } else {
+            showToast(`❌ Save failed: ${result.message}`, 'error');
+        }
+    } catch(e) { showToast('❌ Error saving settings: ' + e.message, 'error'); }
+}
+
+// ============================================================
+// TABLE UTILITIES
+// ============================================================
+function filterTable(tableId, inputId) {
+    const filter = document.getElementById(inputId).value.toUpperCase();
+    const table  = document.querySelector(`#${tableId} table`);
+    if (!table) return;
+    Array.from(table.getElementsByTagName('tr')).slice(1).forEach(tr => {
+        const found = Array.from(tr.getElementsByTagName('td'))
+            .some(td => td.textContent.toUpperCase().includes(filter));
+        tr.style.display = found ? '' : 'none';
+    });
+}
+
+function exportTableToCSV(tableId, filename) {
+    const table = document.querySelector(`#${tableId} table`);
+    if (!table) { showToast('No data to export.', 'warning'); return; }
+    const rows = Array.from(table.querySelectorAll('tr'));
+    const csv  = rows.map(row =>
+        Array.from(row.querySelectorAll('th,td'))
+            .map(cell => `"${cell.textContent.trim().replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+    showToast('✅ Exported!', 'success');
+}
+
+function filterPortScan(status, element) {
+    document.querySelectorAll('#portScanFilters .filter-btn').forEach(b => b.classList.remove('active'));
+    if (element) element.classList.add('active');
+    document.querySelectorAll('#portScanTable tbody tr').forEach(row => {
+        row.style.display = (status === 'all' || row.dataset.status === status) ? '' : 'none';
+    });
+}
+
+async function runPortScan() {
+    const host = document.getElementById('portScanHost').value;
+    const resultsEl = document.getElementById('portScanResults');
+    if (!host) { showToast('Enter a target host/IP first.', 'warning'); return; }
+    resultsEl.innerHTML = `<div class="loading">Scanning ${host}...</div>`;
+    try {
+        const url = `/api/security/port-scan?hostname=${encodeURIComponent(CURRENT_HOSTNAME)}`;
+        const data = await (await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target: host }) })).json();
+        resultsEl.innerHTML = '<table id="portScanTable"><thead><tr><th>Port</th><th>Service</th><th>Status</th></tr></thead><tbody>' +
+            data.results.map(res => `<tr data-status="${res.status}"><td>${res.port}</td><td>${res.service}</td><td><span class="badge ${res.status}">${res.status}</span></td></tr>`).join('') +
+            '</tbody></table>';
+    } catch(e) { resultsEl.innerHTML = `<div class="alert error">${e.message}</div>`; }
+}
+
+// ============================================================
+// COMPARISON
+// ============================================================
+async function loadComparisonData(autoRun = true) {
+    const wrapper = document.getElementById('comparisonServerSelect');
+    const selectedServers = Array.from(wrapper.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+    const container = document.getElementById('comparisonTableContainer');
+    if (!selectedServers.length) { container.innerHTML = '<div class="loading">Select at least one server.</div>'; return; }
+    container.innerHTML = `<div class="loading">Fetching data for ${selectedServers.length} server(s)...</div>`;
+    try {
+        const results = await Promise.all(
+            selectedServers.map(s =>
+                fetch(`/api/stats?hostname=${encodeURIComponent(s)}`)
+                    .then(r => r.ok ? r.json() : r.json().then(e => ({ hostname: s, error: true, detail: e.detail })))
+                    .catch(e => ({ hostname: s, error: true, detail: e.message }))
+            )
+        );
+        renderComparisonTable(results);
+    } catch(e) { showError(e.message, 'comparisonTableContainer'); }
+}
+
+function renderComparisonTable(results) {
+    const container = document.getElementById('comparisonTableContainer');
+    const metrics = [
+        { key: 'cpu',              label: 'CPU',         unit: '%', fixed: 1 },
+        { key: 'memory',           label: 'Memory',      unit: '%', fixed: 1 },
+        { key: 'disk',             label: 'Disk',        unit: '%', fixed: 1 },
+        { key: 'total_connections',label: 'Connections', unit: '',  fixed: 0 },
+        { key: 'uptime',           label: 'Uptime',      unit: 's', fixed: 0 }
+    ];
+    let html = '<table class="comparison-table"><thead><tr><th>Metric</th>';
+    results.forEach(r => { html += `<th>${r.hostname || 'Error'}</th>`; });
+    html += '</tr></thead><tbody>';
+    metrics.forEach(metric => {
+        html += `<tr><td><strong>${metric.label}</strong></td>`;
+        results.forEach(r => {
+            if (r.error) { html += '<td class="cell-warning">Error</td>'; return; }
+            const value = r[metric.key];
+            if (value == null) { html += '<td>N/A</td>'; return; }
+            const display = (metric.unit === 's') ? formatUptime(value) : `${value.toFixed(metric.fixed)}${metric.unit}`;
+            html += `<td>${display}</td>`;
+        });
+        html += '</tr>';
+    });
+    container.innerHTML = html + '</tbody></table>';
+}
+
+// ============================================================
+// GRAFANA
+// ============================================================
+function reloadGrafana() {
+    const iframe = document.getElementById('grafanaIframe');
+    const container = document.getElementById('grafanaIframeContainer');
+    if (!integrationURLs.grafana) { container.innerHTML = '<div class="loading">Grafana URL not configured.</div>'; return; }
+    let url = integrationURLs.grafana;
+    url += (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+    if (!iframe.src || iframe.src === 'about:blank') iframe.src = url;
+    else iframe.contentWindow.location.replace(url);
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+async function loadAvailableServers() {
+    try {
+        const d = await (await fetch('/api/servers')).json();
+        localHostname = d.local_hostname || 'localhost';
+        allServers = d.servers || [];
+        if (!allServers.length) allServers.push(localHostname);
+        CURRENT_HOSTNAME = localHostname;
+        const globalSel = document.getElementById('globalServerSelect');
+        globalSel.innerHTML = '<option value="all">All Servers</option>' +
+            allServers.map(s => `<option value="${s}">${s}</option>`).join('');
+        globalSel.value = 'all';
+        const compWrapper = document.getElementById('comparisonServerSelect');
+        compWrapper.innerHTML = allServers.map((s, idx) =>
+            `<label class="checkbox-item"><input type="checkbox" id="cmp_srv_${idx}" value="${s}" ${idx < 3 ? 'checked' : ''}> ${s}</label>`
+        ).join('');
+    } catch(e) { console.error(e); }
+}
+
+async function updateIntegrationStatus() {
+    try {
+        const d = await (await fetch('/api/integrations/status')).json();
+        let html = '';
+        if (d.wazuh && d.wazuh.enabled)   { html += '<div class="integration-badge connected">🔒 Wazuh</div>'; integrationURLs.wazuh = d.wazuh.url; }
+        if (d.zabbix && d.zabbix.enabled) { html += '<div class="integration-badge connected">🖥️ Zabbix</div>'; integrationURLs.zabbix = d.zabbix.url; }
+        if (d.grafana && d.grafana.enabled) {
+            html += '<div class="integration-badge connected" style="background:#f37726;color:white">📊 Grafana</div>';
+            integrationURLs.grafana = d.grafana.dashboard_url || d.grafana.url;
+            document.getElementById('grafanaTabBtn').style.display = 'block';
+            document.getElementById('grafanaExternalLink').href = integrationURLs.grafana;
+        } else {
+            document.getElementById('grafanaTabBtn').style.display = 'none';
+        }
+        document.getElementById('integrationStatus').innerHTML = html;
+    } catch(e) { console.error(e); }
+}
+
+function startPolling() {
+    const pollSecs = pollInterval / 1000;
+    startCountdown(pollSecs);
+    setInterval(updateStats, pollInterval);
+    setInterval(updateIntegrationStatus, pollInterval * 4);
+    setInterval(checkAlertCount, 10000);
+    setInterval(() => {
+        const activeTab = document.querySelector('.tab.active');
+        if (!activeTab) return;
+        const tabId = activeTab.getAttribute('data-tab-id');
+        if (CURRENT_HOSTNAME === 'all' && !['alerts','serverStatus','comparison','wazuh','zabbix','grafana'].includes(tabId)) return;
+        if (tabId === 'overview') updateMetrics();
+        else if (tabId === 'requests') loadRequests();
+        else if (tabId === 'alerts') loadAlerts();
+        startCountdown(pollSecs);
+    }, pollInterval * 2);
+}
+
+async function init() {
+    // Restore theme
+    if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+        document.getElementById('darkModeToggle').textContent = '☀️';
+    }
+    await loadAvailableServers();
+    await updateStats();
+    await updateMetrics();
+    await updateIntegrationStatus();
+    startPolling();
+    showToast('✅ Dashboard loaded!', 'success', 2500);
+}
+
+init();
+</script>
+</body>
+</html>
