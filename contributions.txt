@@ -12,3 +12,4 @@ Contribution 11 on 2025-11-25 19:50:39 - feat: add basic FastAPI app setup and e
 Contribution 12 on 2025-11-26 02:00:15 - feat: create monolithic index.html template
 Contribution 13 on 2025-11-26 21:42:10 - style: add clean modern styling using CSS grids
 Contribution 14 on 2025-11-28 17:16:20 - feat: add custom charts for system telemetry using Chart.js
+Contribution 15 on 2025-11-30 22:21:24 - fix: resolve websocket connection drop issues in UI
