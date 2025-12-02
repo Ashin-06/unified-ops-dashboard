@@ -15,3 +15,4 @@ Contribution 14 on 2025-11-28 17:16:20 - feat: add custom charts for system tele
 Contribution 15 on 2025-11-30 22:21:24 - fix: resolve websocket connection drop issues in UI
 Contribution 16 on 2025-12-01 20:09:28 - docs: add code comments detailing database tables
 Contribution 17 on 2025-12-02 17:01:09 - feat: add wazuh integration skeleton
+Contribution 18 on 2025-12-02 17:42:12 - feat: fetch wazuh agent statuses and alerts
