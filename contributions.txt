@@ -19,3 +19,4 @@ Contribution 18 on 2025-12-02 17:42:12 - feat: fetch wazuh agent statuses and al
 Contribution 19 on 2025-12-03 22:57:55 - fix: handle wazuh API connection failures gracefully
 Contribution 20 on 2025-12-04 15:43:37 - feat: add zabbix monitoring module
 Contribution 21 on 2025-12-05 03:53:54 - feat: pull zabbix problem list and display on dashboard
+Contribution 22 on 2025-12-05 05:54:09 - refactor: extract wazuh and zabbix logic to separate modules
