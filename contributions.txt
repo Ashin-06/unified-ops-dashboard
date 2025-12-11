@@ -30,3 +30,4 @@ Contribution 29 on 2025-12-08 22:57:28 - feat: fetch active process table via ps
 Contribution 30 on 2025-12-09 10:42:15 - feat: add endpoint to terminate system processes
 Contribution 31 on 2025-12-10 20:09:39 - fix: handle permissions error during process query
 Contribution 32 on 2025-12-10 21:20:01 - style: enhance index.html with dark mode colors
+Contribution 33 on 2025-12-11 07:30:44 - feat: add transition effects and smooth gradients
