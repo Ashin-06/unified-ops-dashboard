@@ -32,3 +32,4 @@ Contribution 31 on 2025-12-10 20:09:39 - fix: handle permissions error during pr
 Contribution 32 on 2025-12-10 21:20:01 - style: enhance index.html with dark mode colors
 Contribution 33 on 2025-12-11 07:30:44 - feat: add transition effects and smooth gradients
 Contribution 34 on 2025-12-12 00:10:02 - docs: add contributing guidelines
+Contribution 35 on 2025-12-12 18:31:57 - feat: add packet sniffing capability using scapy
