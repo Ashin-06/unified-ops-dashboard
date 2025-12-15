@@ -39,3 +39,4 @@ Contribution 38 on 2025-12-13 13:35:52 - feat: push sniffed packets to master bu
 Contribution 39 on 2025-12-14 07:15:01 - refactor: optimize database batch inserts for telemetry
 Contribution 40 on 2025-12-14 19:07:21 - fix: fix datetime formatting in telemetry payload
 Contribution 41 on 2025-12-15 02:42:39 - docs: document packet sniffing requirement (Npcap/libpcap)
+Contribution 42 on 2025-12-15 19:49:47 - feat: add remote agent python script
