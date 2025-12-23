@@ -48,3 +48,4 @@ Contribution 47 on 2025-12-20 20:50:24 - feat: support multiple remote servers i
 Contribution 48 on 2025-12-22 00:05:08 - feat: implement comparison tab for multiple agents
 Contribution 49 on 2025-12-22 13:10:35 - style: style comparison matrices with harmonic scales
 Contribution 50 on 2025-12-22 17:08:48 - feat: add services tab showing windows services
+Contribution 51 on 2025-12-23 10:51:52 - fix: handle non-windows platforms gracefully in services list
