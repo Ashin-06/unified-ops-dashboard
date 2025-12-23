@@ -50,3 +50,4 @@ Contribution 49 on 2025-12-22 13:10:35 - style: style comparison matrices with h
 Contribution 50 on 2025-12-22 17:08:48 - feat: add services tab showing windows services
 Contribution 51 on 2025-12-23 10:51:52 - fix: handle non-windows platforms gracefully in services list
 Contribution 52 on 2025-12-23 11:49:09 - feat: implement log files tailing and viewer in UI
+Contribution 53 on 2025-12-23 14:31:08 - feat: add basic search filtering for log files
