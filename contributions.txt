@@ -65,3 +65,4 @@ Contribution 64 on 2025-12-29 14:50:17 - feat: add retention policy cleanup task
 Contribution 65 on 2025-12-29 17:10:15 - fix: fix database transaction lock during telemetry storage
 Contribution 66 on 2025-12-29 19:26:02 - docs: describe database backup and vacuum commands
 Contribution 67 on 2025-12-30 00:44:10 - feat: add batch_db_writes toggle to configuration
+Contribution 68 on 2025-12-30 07:30:33 - feat: support custom metric collection intervals
