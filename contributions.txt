@@ -67,3 +67,4 @@ Contribution 66 on 2025-12-29 19:26:02 - docs: describe database backup and vacu
 Contribution 67 on 2025-12-30 00:44:10 - feat: add batch_db_writes toggle to configuration
 Contribution 68 on 2025-12-30 07:30:33 - feat: support custom metric collection intervals
 Contribution 69 on 2026-01-01 19:09:06 - fix: fix active alert count counter indexing
+Contribution 70 on 2026-01-02 18:26:17 - feat: add grafana dashboard embedding frame
