@@ -74,3 +74,4 @@ Contribution 73 on 2026-01-05 06:21:47 - fix: handle geolocation API key exhaust
 Contribution 74 on 2026-01-05 12:42:57 - refactor: optimize frontend polling intervals dynamically
 Contribution 75 on 2026-01-06 02:49:57 - docs: add license file
 Contribution 76 on 2026-01-07 09:13:23 - style: refine charts color palette for visual harmony
+Contribution 77 on 2026-01-07 23:19:47 - feat: implement process hierarchy tree view
