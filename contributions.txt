@@ -78,3 +78,4 @@ Contribution 77 on 2026-01-07 23:19:47 - feat: implement process hierarchy tree 
 Contribution 78 on 2026-01-08 21:07:29 - fix: resolve sorting issues in process table columns
 Contribution 79 on 2026-01-10 07:43:53 - docs: update agent configuration notes in ARCHITECTURE.md
 Contribution 80 on 2026-01-10 10:03:26 - feat: add start_dashboard.bat custom launcher
+Contribution 81 on 2026-01-11 16:13:49 - feat: verify and test zabbix authentication configurations
