@@ -83,3 +83,4 @@ Contribution 82 on 2026-01-12 17:32:48 - feat: verify and test wazuh endpoints w
 Contribution 83 on 2026-01-12 22:40:45 - style: add subtle hover micro-animations to UI tiles
 Contribution 84 on 2026-01-13 21:54:38 - fix: fix packet sniffer scapy error when interface is null
 Contribution 85 on 2026-01-15 09:34:48 - refactor: cleanup database python functions and use context managers
+Contribution 86 on 2026-01-16 04:25:26 - feat: add local database replication to bypass readonly locks
