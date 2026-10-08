@@ -29,11 +29,11 @@ class WazuhAPI:
             url = url[:-4]
         self.base = url
         
-        self.user = self.cfg.get('wazuh_user')
-        self.password = self.cfg.get('wazuh_password')
-        self.verify_ssl = self.cfg.get('verify_ssl', False) # Default to False for self-signed
+        self.user = self.cfg.get('wazuh_user') or self.cfg.get('username')
+        self.password = self.cfg.get('wazuh_password') or self.cfg.get('password')
+        self.verify_ssl = self.cfg.get('verify_ssl', True) # Default to False for self-signed
         self.token = None
-        self.enabled = bool(self.base)
+        self.enabled = self.cfg.get('enabled', False) and bool(self.base)
 
     def _get_headers(self):
         h = {

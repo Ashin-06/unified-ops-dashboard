@@ -1,45 +1,44 @@
 {
-    "master_api_key": "CHANGE_THIS_SECRET_KEY",
-    "performance": {
-        "frontend_poll_interval": 15,
-        "db_batch_size": 100,
-        "db_batch_interval": 5,
-        "monitoring_interval": 10,
-        "cleanup_interval": 3600,
-        "data_retention_hours": 168
+  "web_host": "127.0.0.1",
+  "web_port": 8081,
+  "require_auth_for_reads": false,
+  "verify_agent_ssl": true,
+  "retention_days": 7,
+  "performance": {
+    "frontend_poll_interval": 15,
+    "metric_collection_interval": 5,
+    "batch_db_writes": true,
+    "batch_size": 50,
+    "enable_packet_sniffing": false
+  },
+  "alerts": {
+    "cpu_threshold": 80,
+    "memory_threshold": 80,
+    "disk_threshold": 90,
+    "alert_cooldown_seconds": 300
+  },
+  "agents": [],
+  "log_files_to_analyze": {},
+  "integrations": {
+    "wazuh": {
+      "enabled": false,
+      "wazuh_url": "",
+      "username": "",
+      "password": "",
+      "verify_ssl": true
     },
-    "alerts": {
-        "cpu_threshold": 80,
-        "memory_threshold": 80,
-        "disk_threshold": 90,
-        "network_io_threshold_mbps": 100,
-        "tcp_reset_threshold": 20,
-        "server_error_threshold": 10,
-        "alert_cooldown_seconds": 300
+    "zabbix": {
+      "enabled": false,
+      "zabbix_url": "",
+      "username": "",
+      "password": "",
+      "verify_ssl": true
     },
-    "packet_sniffing": {
-        "enabled": false,
-        "interface": "Ethernet",
-        "max_queue_size": 1000
-    },
-    "integrations": {
-        "wazuh": {
-            "enabled": false,
-            "wazuh_url": "https://wazuh-server:55000",
-            "username": "admin",
-            "password": "admin"
-        },
-        "zabbix": {
-            "enabled": false,
-            "zabbix_url": "http://zabbix-server/api_jsonrpc.php",
-            "username": "Admin",
-            "password": "zabbix"
-        },
-        "grafana": {
-            "enabled": false,
-            "url": "http://grafana-server:3000",
-            "dashboard_url": "",
-            "embed": false
-        }
+    "grafana": {
+      "enabled": false,
+      "url": "",
+      "dashboard_url": "",
+      "embed": false
     }
+  }
 }

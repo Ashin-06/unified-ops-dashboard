@@ -1,0 +1,2 @@
+# Optional: requires packet capture permissions and Npcap on Windows.
+scapy>=2.5,<3

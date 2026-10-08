@@ -55,3 +55,8 @@ index working.html
 
 # Backup files
 backup/
+.venv/
+.pytest_cache/
+*.db-wal
+*.db-shm
+node_modules/

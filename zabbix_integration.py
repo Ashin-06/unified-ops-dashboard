@@ -22,11 +22,11 @@ class ZabbixAPI:
     def __init__(self, cfg: dict):
         self.cfg = cfg or {}
         self.url = self.cfg.get('zabbix_url', '')
-        self.user = self.cfg.get('zabbix_user')
-        self.password = self.cfg.get('zabbix_password')
+        self.user = self.cfg.get('zabbix_user') or self.cfg.get('username')
+        self.password = self.cfg.get('zabbix_password') or self.cfg.get('password')
         self.verify_ssl = self.cfg.get('verify_ssl', True)
         self.token = None
-        self.enabled = bool(self.url)
+        self.enabled = self.cfg.get('enabled', False) and bool(self.url)
         self.req_id = 1
 
     def login(self):

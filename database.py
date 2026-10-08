@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""
-Server Monitor v15.24 - Database Manager
-========================================
-- FIX: Enable WAL mode to prevent "database is locked" errors.
-- FIX: Batch 'requests' inserts to handle high-speed packet sniffing.
-"""
+"""SQLite storage with bounded, retryable write batches."""
 
 import sqlite3
 import threading
@@ -16,41 +11,38 @@ from pathlib import Path
 from datetime import datetime
 
 # --- Configuration ---
-if os.name == 'nt':
-    BASE_DIR = Path(os.getenv('PROGRAMDATA', 'C:/')) / 'ServerMonitor'
-else:
-    BASE_DIR = Path('/opt/server_monitor')
-
-DEFAULT_DB_PATH = BASE_DIR / 'Data' / 'monitor.db'
-CONFIG_PATH = BASE_DIR / 'config.json'
-
-try:
-    if CONFIG_PATH.exists():
-        with open(CONFIG_PATH, 'r') as f:
-            config = json.load(f)
-        DB_PATH = Path(config.get("database", DEFAULT_DB_PATH))
-        # Increase batch size for better performance
-        BATCH_ENABLED = config.get('performance', {}).get('batch_db_writes', True)
-        BATCH_SIZE = config.get('performance', {}).get('batch_size', 50) 
-    else:
-        raise FileNotFoundError
-except Exception:
-    DB_PATH = DEFAULT_DB_PATH
-    BATCH_ENABLED = True
-    BATCH_SIZE = 50
+from settings import BASE_DIR, CONFIG_PATH, USER_CONFIG, data_path
+DB_PATH = data_path(USER_CONFIG.get('database'), 'Data/monitor.db')
+BATCH_ENABLED = USER_CONFIG.get('performance', {}).get('batch_db_writes', True)
+BATCH_SIZE = max(1, int(USER_CONFIG.get('performance', {}).get('batch_size', 50)))
 
 # Ensure directory exists
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 logger = logging.getLogger("ServerMonitor")
 
+from contextlib import contextmanager
+
+@contextmanager
+def connection(*args, **kwargs):
+    conn = sqlite3.connect(*args, **kwargs)
+    try:
+        with conn:
+            yield conn
+    finally:
+        conn.close()
+
+
 class DatabaseManager:
     def __init__(self, path: str):
         self.path = path
         self.batch_buffer = []
         self.batch_lock = threading.Lock()
+        self.flush_lock = threading.Lock()
+        self.stop_event = threading.Event()
         self.batch_enabled = BATCH_ENABLED
         self.batch_size = BATCH_SIZE
+        self.last_write_error = None
         self._init_db()
         
         # Start background writer if batching is enabled
@@ -64,7 +56,7 @@ class DatabaseManager:
         except Exception:
             pass
             
-        with sqlite3.connect(self.path, check_same_thread=False) as conn:
+        with connection(self.path, check_same_thread=False) as conn:
             # Enable Write-Ahead Logging (WAL) for concurrency
             conn.execute('PRAGMA journal_mode=WAL;')
             # Increase cache size
@@ -105,7 +97,7 @@ class DatabaseManager:
             for sql in migrations:
                 try:
                     cur.execute(sql)
-                    logger.info(f"✅ Migration executed: {sql.split('ADD COLUMN')[1].split()[0]}")
+                    logger.info(f" Migration executed: {sql.split('ADD COLUMN')[1].split()[0]}")
                 except sqlite3.OperationalError as e:
                     if "duplicate column" not in str(e).lower():
                         logger.warning(f"Migration warning: {e}")
@@ -162,32 +154,41 @@ class DatabaseManager:
 
     def _start_batch_writer(self):
         """Background thread to flush metrics to disk."""
+        if hasattr(self, 'writer_thread') and self.writer_thread.is_alive():
+            return
+        self.stop_event.clear()
         def writer():
-            while True:
-                time.sleep(2) # Write every 2 seconds
+            while not self.stop_event.wait(2):
                 self._flush_batch()
         
         t = threading.Thread(target=writer, daemon=True, name="DBBatchWriter")
+        self.writer_thread = t
         t.start()
 
+    def close(self):
+        self.stop_event.set()
+        if hasattr(self, 'writer_thread'):
+            self.writer_thread.join(timeout=12)
+        self._flush_batch()
+
     def _flush_batch(self):
-        """Writes buffered queries to the DB."""
-        with self.batch_lock:
-            if not self.batch_buffer:
+        """Keep failed transactions queued, preserving order for the next retry."""
+        with self.flush_lock:
+            with self.batch_lock:
+                buffer_copy = self.batch_buffer[:]
+                self.batch_buffer.clear()
+            if not buffer_copy:
                 return
-            
-            buffer_copy = self.batch_buffer[:]
-            self.batch_buffer.clear()
-            
-        try:
-            with sqlite3.connect(self.path, check_same_thread=False) as conn:
-                # Ensure WAL is on for this connection too
-                conn.execute('PRAGMA journal_mode=WAL;') 
-                for sql, params in buffer_copy:
-                    conn.execute(sql, params)
-                conn.commit()
-        except Exception as e:
-            logger.error(f"Batch write failed: {e}")
+            try:
+                with connection(self.path, timeout=10.0) as conn:
+                    for sql, params in buffer_copy:
+                        conn.execute(sql, params)
+                self.last_write_error = None
+            except sqlite3.Error as exc:
+                self.last_write_error = str(exc)
+                with self.batch_lock:
+                    self.batch_buffer[0:0] = buffer_copy
+                logger.exception('Batch write failed; retained for retry')
 
     def execute(self, sql: str, params=()):
         """Executes a write operation."""
@@ -200,6 +201,8 @@ class DatabaseManager:
         ):
             flush_now = False
             with self.batch_lock:
+                if len(self.batch_buffer) >= 10000:
+                    raise RuntimeError('Database write queue is full; storage needs attention')
                 self.batch_buffer.append((sql, params))
                 if len(self.batch_buffer) >= self.batch_size:
                     # Trigger an immediate flush to prevent unbounded memory growth
@@ -209,26 +212,39 @@ class DatabaseManager:
         else:
             # Immediate write for alerts, agents, etc.
             try:
-                with sqlite3.connect(self.path, check_same_thread=False, timeout=10.0) as conn:
+                with connection(self.path, check_same_thread=False, timeout=10.0) as conn:
                     conn.execute(sql, params)
                     conn.commit()
             except Exception as e:
                 logger.error(f"DB Write Error: {e}")
+                raise
+
+    def execute_many(self, sql, rows):
+        """Commit all rows atomically; never acknowledge a partially saved upload."""
+        with connection(self.path, timeout=10.0) as conn:
+            conn.executemany(sql, rows)
+
+    def health(self):
+        with connection(self.path, timeout=1.0) as conn:
+            conn.execute('SELECT 1 FROM system_metrics LIMIT 1').fetchall()
+        with self.batch_lock:
+            pending = len(self.batch_buffer)
+        return {'healthy': self.last_write_error is None, 'pending_writes': pending}
 
     def query(self, sql: str, params=()):
         """Executes a read operation."""
         try:
-            with sqlite3.connect(self.path, check_same_thread=False, timeout=10.0) as conn:
+            with connection(self.path, check_same_thread=False, timeout=10.0) as conn:
                 cur = conn.cursor()
                 cur.execute(sql, params)
                 return cur.fetchall()
         except Exception as e:
             logger.error(f"DB Query Error: {e}")
-            return []
+            raise
 
     def vacuum(self):
         try:
-            with sqlite3.connect(self.path, check_same_thread=False) as conn:
+            with connection(self.path, check_same_thread=False) as conn:
                 conn.execute('VACUUM')
         except Exception as e:
             logger.error(f"Vacuum error: {e}")

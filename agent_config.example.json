@@ -1,0 +1,9 @@
+{
+  "agent_port": 8082,
+  "master_url": "http://127.0.0.1:8081",
+  "master_api_key": "REPLACE_WITH_MASTER_KEY",
+  "hostname": "server-01",
+  "metric_push_interval": 5,
+  "enable_packet_sniffing": false,
+  "log_files_to_analyze": {}
+}

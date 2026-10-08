@@ -1,208 +1,145 @@
-# ✨ Unified Ops Dashboard
+# Unified Ops Dashboard
 
-A comprehensive real-time monitoring dashboard that aggregates system metrics, security alerts, and infrastructure data from multiple sources into a unified, AI-powered interface.
+A self-hosted operations workspace for live system metrics, server health, alerts, processes, logs, and Wazuh, Zabbix, and Grafana integrations.
 
-![Dashboard Version](https://img.shields.io/badge/version-15.24-blue.svg)
-![Python](https://img.shields.io/badge/python-3.8%2B-brightgreen.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+The v16 interface includes responsive navigation, light/dark themes, local SVG charts, search, CSV reports, explicit stale/error states, and authenticated operator actions. No frontend build step, fonts, or chart CDNs are required.
 
-## 🚀 Features
+## Quick start
 
-### Core Monitoring
-- **Real-time System Metrics**: CPU, memory, disk, and network monitoring
-- **Multi-Server Dashboard**: Monitor multiple servers from a single interface
-- **Historical Data**: Track performance trends with customizable time ranges
-- **Interactive Charts**: Zoomable, pan-able charts with Chart.js
+Requires **Python 3.10+**. Windows is the primary supported platform; resource monitoring also works on Linux and macOS. Windows services are Windows-only.
 
-### Security & Infrastructure
-- **🔒 Wazuh Integration**: Security event monitoring and analysis
-- **🖥️ Zabbix Integration**: Infrastructure monitoring and alerting
-- **📊 Grafana Integration**: Advanced visualization and dashboards
-- **🛡️ Port Scanner**: Remote security scanning capabilities
-
-### Advanced Features
-- **Process Management**: View, sort, and kill processes with tree view
-- **Network Connections**: Monitor active connections with detailed metadata
-- **Packet Sniffing**: Real-time HTTP/HTTPS request capture (optional)
-- **AI Log Analysis**: Intelligent log parsing and insights
-- **Multi-Server Comparison**: Side-by-side server metrics comparison
-- **Alert System**: Configurable thresholds with cooldown management
-- **Dark Mode**: Eye-friendly theme switching
-
-## 📋 Prerequisites
-
-- **Python 3.8+**
-- **Windows** (tested on Windows 10/11)
-- **Administrator privileges** (required for process management and packet sniffing)
-
-## 🔧 Installation
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/Ashin-06/unified-ops-dashboard.git
-cd unified-ops-dashboard
+```powershell
+python -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt
+.venv\Scripts\python main.py
 ```
 
-### 2. Install Dependencies
+Open **http://127.0.0.1:8081**. On Windows, subsequent launches can use `start_dashboard.bat`. The launcher does not request administrator access.
 
-```bash
-pip install -r requirements.txt
+On Linux/macOS, use `.venv/bin/python` instead. A single application process is required: multiple workers would each run a collector.
+
+At first start, the application generates a random `master_api_key` in `config.json`. Data lives in `Data/monitor.db`; logs live in `Logs/monitor.log`, beside the application. These files are ignored by Git. History is collected over time; the dashboard does not create sample infrastructure or synthetic metrics.
+
+## Configuration
+
+Optionally copy `config.example.json` to `config.json` **before first launch**, or merge its settings into an existing configuration. A missing key is generated automatically. Do not overwrite an existing key after enrolling agents.
+
+- `web_host` / `web_port`: default `127.0.0.1:8081`.
+- `performance.frontend_poll_interval`: seconds between UI refreshes; minimum 5.
+- `performance.metric_collection_interval`: seconds between resource samples.
+- `performance.enable_packet_sniffing`: defaults to `false`.
+- `alerts`: CPU, memory, disk thresholds and repeat-alert cooldown.
+- `retention_days`: history retention, default 7 days.
+- `agents`: remote hostnames, URLs and API keys.
+- `log_files_to_analyze`: friendly-name-to-path mapping.
+- `integrations`: tool URLs and credentials. Explicitly enable each tool.
+
+Environment overrides:
+
+| Variable | Purpose |
+| --- | --- |
+| `OPS_DATA_DIR` | Alternate directory for the master database and logs |
+| `OPS_CONFIG` | Explicit path to the master configuration |
+| `OPS_API_KEY` | Override the master API key for this process |
+
+Relative database/log paths resolve under `OPS_DATA_DIR` (or the application directory). Invalid JSON fails explicitly instead of silently using defaults.
+
+### Operator access
+
+Opening the local dashboard is read-only until you unlock an operator session in **Settings** using the key from `config.json`. The key stays in browser memory and is discarded on reload. All API mutations require `Authorization: Bearer <key>`, including alert changes, clearing alerts, process termination, port scans, and agent submissions. Known placeholder keys are rejected.
+
+For access beyond your own machine, use TLS through a reverse proxy, set `require_auth_for_reads` to `true`, and restrict network access. The HTML shell stays public so the Settings unlock flow works. Read-only access exposes system and log information when this option is false. The app has a shared operator key, not individual user accounts or role-based authorization.
+
+### Remote agents
+
+On each monitored host, copy `agent_config.example.json` to `agent_config.json`, set `master_url`, a unique `hostname`, and the master's key. Install the dependencies and run:
+
+```powershell
+python agent.py
 ```
 
-### 3. Configure the Dashboard
+On the master, add the host to `config.json`, then restart:
 
-Edit `config.json` to set:
-- Master API key
-- Alert thresholds
-- Integration settings (Wazuh, Zabbix, Grafana)
-- Performance tuning parameters
-
-**Example config.json:**
-```json
-{
-  "master_api_key": "YOUR_SECRET_KEY_HERE",
-  "performance": {
-    "frontend_poll_interval": 15,
-    "db_batch_size": 100
-  },
-  "alerts": {
-    "cpu_threshold": 80,
-    "memory_threshold": 80,
-    "disk_threshold": 90
-  }
-}
-```
-
-### 4. (Optional) Configure Remote Agents
-
-Edit `agent_config.json` to add remote servers:
 ```json
 {
   "agents": [
-    {
-      "hostname": "server-01",
-      "url": "http://192.168.1.100:8082",
-      "api_key": "agent_secret_key"
-    }
+    {"hostname": "server-01", "url": "http://192.168.1.10:8082", "api_key": "YOUR_GENERATED_MASTER_KEY"}
   ]
 }
 ```
 
-## 🎯 Quick Start
-
-### Run the Dashboard
-
-**Option 1: Using the Batch File (Recommended)**
-```bash
-start_dashboard.bat
-```
-This automatically requests administrator privileges.
-
-**Option 2: Manual Start**
-```bash
-python main.py
-```
-
-Then open your browser to: **http://localhost:8081**
-
-## 📦 Project Structure
-
-```
-ServerMonitor/
-├── main.py                 # FastAPI application (master server)
-├── monitor.py              # Core monitoring logic
-├── database.py             # SQLite database operations
-├── agent.py                # Remote agent implementation
-├── wazuh_integration.py    # Wazuh API integration
-├── zabbix_integration.py   # Zabbix API integration
-├── index.html              # Dashboard UI (monolithic)
-├── config.json             # Main configuration
-├── agent_config.json       # Remote agent configuration
-├── start_dashboard.bat     # Windows launcher with admin elevation
-├── Data/                   # SQLite database storage
-├── Logs/                   # Application logs
-├── static/                 # Static assets (CSS/JS if separated)
-└── tools/                  # Utility scripts
-```
-
-## 🔐 Security Considerations
-
-1. **API Keys**: Change the default `master_api_key` in `config.json`
-2. **Network Exposure**: By default, the server binds to `0.0.0.0:8081` - consider firewall rules
-3. **Process Management**: The `/api/processes/kill` endpoint should be secured (see `improvements.md`)
-4. **HTTPS**: Consider using a reverse proxy (nginx/caddy) for production deployments
-
-## 🌐 API Endpoints
-
-### System Metrics
-- `GET /api/stats?hostname=<name>` - Current system stats
-- `GET /api/metrics?range=<time>&hostname=<name>` - Historical metrics
-
-### Process Management
-- `GET /api/processes?hostname=<name>` - Process list
-- `POST /api/processes/kill` - Kill a process
+The agent listens on port 8082 and authenticates its endpoints. Restrict it to the master using network controls. Use HTTPS for traffic across untrusted networks. Agent certificates are verified by default; `verify_agent_ssl: false` is an explicit opt-out for a trusted test environment.
 
 ### Integrations
-- `GET /api/wazuh/stats` - Wazuh summary
-- `GET /api/wazuh/agents` - Wazuh agent list
-- `GET /api/zabbix/problems` - Active Zabbix problems
 
-### Agent Operations
-- `POST /api/agent/submit` - Agent data submission
-- `GET /api/servers` - List all known servers
+Use `username` and `password` in the example configuration. The older `wazuh_user` / `wazuh_password` and `zabbix_user` / `zabbix_password` keys remain supported. Configure trusted certificates; TLS verification is enabled by default. Integration cards distinguish configured tools from successful connectivity checks. Grafana opens its configured dashboard in a new tab. Wazuh alert retrieval depends on manager API support; some deployments require an indexer integration that this project does not implement.
 
-## 🎨 Dashboard Tabs
+### Optional packet capture
 
-1. **📊 Overview**: Real-time charts for CPU, memory, network, disk, and requests
-2. **🔒 Wazuh Security**: Security alerts and agent status
-3. **🖥️ Zabbix Infra**: Infrastructure monitoring and triggers
-4. **📊 Grafana**: Embedded Grafana dashboards (if configured)
-5. **🛡️ Port Scanner**: Remote port scanning utility
-6. **🌐 Requests**: HTTP/HTTPS request logs (requires packet sniffing)
-7. **⚠️ Alerts**: System alerts and warnings
-8. **⚙️ Services**: Windows service status
-9. **💻 Processes**: Process management (top list & tree view)
-10. **🔗 Connections**: Active network connections
-11. **📋 Logs**: Application logs with AI analysis
-12. **📡 Server Status**: Multi-server health overview
-13. **🖥️🖥️ Comparison**: Side-by-side server comparison
+```powershell
+python -m pip install -r requirements-capture.txt
+```
 
-## 🤝 Contributing
+Enable capture explicitly in the master or agent configuration. Windows requires Npcap; elevated capture permissions may be needed. Captured traffic is packet metadata and readable HTTP data. It does not decrypt HTTPS. Ordinary metrics and the dashboard do not require capture privileges.
 
-Contributions are welcome! See `CONTRIBUTING.md` for guidelines.
+## Workspace views
 
-## 📝 License
+- **Overview:** live metrics, CPU/memory history, network rates, server freshness, recent alerts.
+- **Servers:** host status and resource comparison for up to 20 hosts.
+- **Processes:** CPU/memory sorting, search, and confirmed authenticated termination.
+- **Services:** configured Windows service status.
+- **Connections / Traffic:** searchable network and captured-request records.
+- **Alerts:** host-scoped signals, CSV export, and confirmed clearing.
+- **Logs:** file selection, level/search filters, and rule-based log summaries.
+- **Integrations:** connectivity summaries and links to configured tools.
+- **Port scanner:** validated and authenticated checks on authorized targets.
+- **Settings:** alert thresholds and operator-session controls.
 
-This project is licensed under the MIT License - see the `LICENSE` file for details.
+Live refresh can be paused and stops while the tab is hidden. Settings and scan forms are not replaced by background polling. Failed updates retain the last successful view and label it stale. CSV exports neutralize spreadsheet formula prefixes.
 
-## 🐛 Known Issues
+## Validation
 
-- Packet sniffing requires admin privileges and may conflict with antivirus software
-- Windows-specific implementation (process management uses `psutil`)
-- Large log files can slow down the log viewer
+```powershell
+python -m pip install -r requirements-dev.txt
+python -m pytest
+node --check static/dashboard.js
+```
 
-## 🔮 Roadmap
+Node is only needed for the optional JavaScript syntax check. Tests use an isolated temporary configuration and database; no actual processes are terminated or external hosts scanned. Coverage includes API authentication, validation, agent metrics, host filtering, UTC history, database retries, TLS defaults, and remote process compatibility.
 
-- [ ] Linux/macOS support
-- [ ] User authentication system
-- [ ] Prometheus exporter
-- [ ] Docker containerization
-- [ ] Auto-reconnect on server disconnect
-- [ ] Log export functionality
-- [ ] Mobile-responsive design improvements
+## Migration from v15
 
-## 💡 Tips
+Old installations read configuration from `C:\ProgramData\ServerMonitor` or `/opt/server_monitor`. Set `OPS_DATA_DIR` to that directory to continue using its data, or copy your configuration and database into this project deliberately. Review the example for the supported performance setting names. Administrative API calls now require authentication. Bind address defaults to loopback; remote access must be configured intentionally. Scapy is optional and capture is off by default. The browser UI is now split into `index.html`, `static/dashboard.css`, and `static/dashboard.js`; the old `templates/index.html` is not served.
 
-- Use **Admin Mode** (`start_dashboard.bat`) for full feature access
-- Configure alert thresholds in the Settings tab
-- Use the comparison tab to identify performance differences across servers
-- Enable dark mode for better visibility in low-light environments
+## Project layout
 
-## 📧 Support
+`main.py` serves the FastAPI application; `monitor.py` collects data; `database.py` manages SQLite and retryable batches; `settings.py` resolves configuration; `schemas.py` validates requests; `agent.py` runs on remote hosts. Integration clients are in `wazuh_integration.py` and `zabbix_integration.py`.
 
-For issues, questions, or feature requests, please open an issue on GitHub.
+Licensed under MIT. See `LICENSE`.
 
----
+## Audit follow-up
 
-**Made with ❤️ by [Ashin-06](https://github.com/Ashin-06)**
+See `AUDIT.md` for the follow-up findings, fixes, validation, and remaining deployment limits. The regression suite now has 63 cases. An optional browser audit is available at `tests/browser_audit.cjs`; it requires Playwright and a running local dashboard. It uses intercepted data to verify host changes and stale responses without terminating processes.
+
+
+## Everyday website features
+
+- Search pages and servers with the header search button or Ctrl/Cmd+K.
+- Help & about provides onboarding, troubleshooting, keyboard hints and a source-project link.
+- Privacy explains local storage, collected data, configured integrations and exports.
+- Settings includes browser-only appearance, refresh interval and page-size preferences, plus reset controls. History range is remembered too.
+- Long lists have previous/next pagination; search and CSV export cover all fetched matching records, not just the visible page.
+- Operator access and session locking are available in the header.
+- Connection loss has a visible notice and retry control; automatic reconnect refreshes available data.
+- Mobile navigation is removed from keyboard focus when closed. Dialog labels, skip navigation, print styles, no-JavaScript guidance and a useful 404 page are included.
+- Search-engine indexing is disabled for this private operations workspace.
+
+Optional browser checks: `node tests/browser_website.cjs` and `node tests/browser_audit.cjs` (Playwright and Microsoft Edge required; run the dashboard first). Python verification: `python -m pytest`. Both browser scripts use isolated browser sessions.
+
+## Native investigation workspace
+
+Incident inbox, Anomaly insights, Operations brief, Team access and Activity audit work with the dashboard's own data. Investigate grouped local signals, use an explained priority queue, assign owners and download handover reports. See [SECURITY_WORKSPACE.md](SECURITY_WORKSPACE.md) for usage and limits. Newly introduced vendor adapters have been removed.
+
+Run `python -m pytest -q` for backend tests. Browser suites: `tests/browser_audit.cjs`, `tests/browser_website.cjs`, `tests/browser_security.cjs` (Playwright with Edge and the local server on port 8081).
+
+Native **Detections** adds explainable traffic-pattern rules, adjustable thresholds, evidence references and deduplicated incident creation. See SECURITY_WORKSPACE.md for coverage requirements and limitations.

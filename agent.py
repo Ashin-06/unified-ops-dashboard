@@ -1,13 +1,7 @@
 #!/usr/bin/env python3
-"""
-Server Monitor v15.26 - Universal Agent
-=======================================
-- FEATURES: CPU/Mem/Disk/Net, Logs, Processes (Kill), Connections, Port Scan.
-- NEW: Packet Sniffing (Scapy) enabled for the "Requests" tab.
-- FIX: Replaced deprecated on_event(startup) with lifespan context manager.
-- FIX: verify_key now handles malformed Authorization headers gracefully.
-- COMPATIBILITY: Windows (needs Npcap), Linux (needs Root), Mac.
-"""
+"""Remote telemetry collector and authenticated control API."""
+import asyncio
+import secrets
 import uvicorn
 import json
 import platform
@@ -21,7 +15,7 @@ import socket
 import requests
 from contextlib import asynccontextmanager
 from pathlib import Path
-from fastapi import FastAPI, Header, HTTPException, Depends
+from fastapi import FastAPI, Header, HTTPException, Depends, Query
 from pydantic import BaseModel
 from typing import Optional, Annotated, List
 from datetime import datetime, timezone
@@ -30,7 +24,7 @@ from datetime import datetime, timezone
 try:
     from scapy.all import sniff, TCP, IP, UDP, Raw
     SCAPY_AVAILABLE = True
-except ImportError:
+except Exception:
     SCAPY_AVAILABLE = False
 
 # --- Configuration Loading ---
@@ -65,19 +59,25 @@ MASTER_API_KEY = CONFIG.get("master_api_key")
 MASTER_URL = CONFIG.get('master_url', 'http://127.0.0.1:8081').rstrip('/')
 REQUEST_BUFFER = [] 
 BUFFER_LOCK = threading.Lock()
+STOP_EVENT = threading.Event()
 
 # --- Lifespan: replaces deprecated @app.on_event("startup") ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    threading.Thread(target=push_system_metrics, daemon=True, name="MetricPusher").start()
-    if SCAPY_AVAILABLE:
-        threading.Thread(target=start_sniffer, daemon=True, name="PacketSniffer").start()
-        threading.Thread(target=push_requests_buffer, daemon=True, name="RequestFlusher").start()
-    logger.info(f"Agent started: {AGENT_HOSTNAME}")
-    yield
-    # Shutdown
-    logger.info("Agent shutting down.")
+    STOP_EVENT.clear()
+    workers = [(push_system_metrics, 'MetricPusher')]
+    if SCAPY_AVAILABLE and CONFIG.get('enable_packet_sniffing', False):
+        workers += [(start_sniffer, 'PacketSniffer'), (push_requests_buffer, 'RequestFlusher')]
+    threads = [threading.Thread(target=fn, daemon=True, name=name) for fn, name in workers]
+    for thread in threads:
+        thread.start()
+    try:
+        yield
+    finally:
+        STOP_EVENT.set()
+        for thread in threads:
+            await asyncio.to_thread(thread.join, 10)
+        logger.info('Agent stopped')
 
 app = FastAPI(title="Server Monitor Agent", lifespan=lifespan)
 
@@ -108,7 +108,7 @@ def packet_callback(pkt):
         data = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "hostname": AGENT_HOSTNAME,
-            "method": method, "path": path, "status_code": 200, 
+            "method": method[:32], "path": path[:8192], "status_code": 200,
             "response_time": 0.0, "size": len(pkt), "src_ip": src_ip,
             "dst_port": dst_port, "protocol": protocol
         }
@@ -120,14 +120,15 @@ def packet_callback(pkt):
 
 def start_sniffer():
     if not SCAPY_AVAILABLE:
-        logger.warning("⚠️ Scapy not found. 'Requests' tab will be empty.")
+        logger.warning(" Scapy not found. 'Requests' tab will be empty.")
         return
     logger.info("📡 Packet Sniffer Started (Background)")
     try:
         # filter="tcp or udp" avoids ARP/ICMP noise
-        sniff(iface=CONFIG.get("interface"), prn=packet_callback, filter="tcp or udp", store=0)
+        while not STOP_EVENT.is_set():
+            sniff(iface=CONFIG.get("interface"), prn=packet_callback, filter="tcp or udp", store=0, timeout=2)
     except Exception as e:
-        logger.error(f"❌ Sniffer Error: {e}")
+        logger.error(f" Sniffer Error: {e}")
 
 # --- 2. DATA PUSHERS (Background Threads) ---
 def push_system_metrics():
@@ -145,8 +146,7 @@ def push_system_metrics():
     except: ld_r = ld_w = ln_s = ln_r = 0
     last_t = time.time()
 
-    while True:
-        time.sleep(CONFIG.get("metric_push_interval", 5))
+    while not STOP_EVENT.wait(max(1, CONFIG.get("metric_push_interval", 5))):
         try:
             curr_t = time.time(); delta = curr_t - last_t
             if delta <= 0: delta = 1
@@ -209,7 +209,7 @@ def push_system_metrics():
                 "total_connections": total_connections
             }
             
-            logger.info(f"📊 Pushing metrics: CPU={cpu:.1f}%, Mem={mem:.1f}%, Disk={disk_usage:.1f}%, Uptime={uptime}s, Conns={total_connections}")
+            logger.info(f" Pushing metrics: CPU={cpu:.1f}%, Mem={mem:.1f}%, Disk={disk_usage:.1f}%, Uptime={uptime}s, Conns={total_connections}")
             
             response = session.post(url, json=payload, timeout=5)
             if response.status_code != 200:
@@ -217,25 +217,31 @@ def push_system_metrics():
                 
         except Exception as e: 
             logger.error(f"Metric Push Error: {e}")
+    session.close()
+
+def flush_request_batch(session):
+    """Remove a batch only after the master confirms a successful commit."""
+    with BUFFER_LOCK:
+        batch = REQUEST_BUFFER[:50]
+    if not batch:
+        return 0
+    response = session.post(f'{MASTER_URL}/api/agent/submit_requests', json=batch, timeout=5)
+    response.raise_for_status()
+    if response.json().get('status') != 'success':
+        raise RuntimeError('Master did not acknowledge the traffic batch')
+    with BUFFER_LOCK:
+        del REQUEST_BUFFER[:len(batch)]
+    return len(batch)
+
 
 def push_requests_buffer():
-    """Flushes sniffed packets to Master"""
-    url = f"{MASTER_URL}/api/agent/submit_requests"
-    session = requests.Session()
-    session.headers.update({"Authorization": f"Bearer {MASTER_API_KEY}"})
-
-    while True:
-        time.sleep(3)
-        batch = []
-        with BUFFER_LOCK:
-            if not REQUEST_BUFFER: continue
-            count = min(len(REQUEST_BUFFER), 50)
-            batch = REQUEST_BUFFER[:count]
-            del REQUEST_BUFFER[:count]
-        
-        try:
-            if batch: session.post(url, json=batch, timeout=3)
-        except: pass
+    with requests.Session() as session:
+        session.headers.update({'Authorization': f'Bearer {MASTER_API_KEY}'})
+        while not STOP_EVENT.wait(3):
+            try:
+                flush_request_batch(session)
+            except Exception as exc:
+                logger.warning('Traffic upload failed; retaining batch for retry: %s', exc)
 
 # --- 3. API ENDPOINTS (For Master Controls) ---
 async def verify_key(authorization: Annotated[str | None, Header()] = None):
@@ -243,7 +249,7 @@ async def verify_key(authorization: Annotated[str | None, Header()] = None):
     if not authorization:
         raise HTTPException(status_code=401, detail="Authorization header missing")
     parts = authorization.split(" ", 1)
-    if len(parts) != 2 or parts[0].lower() != 'bearer' or parts[1] != MASTER_API_KEY:
+    if len(parts) != 2 or parts[0].lower() != 'bearer' or MASTER_API_KEY in {'', None, 'YOUR_SECRET_KEY_HERE', 'CHANGE_THIS_SECRET_KEY', 'REPLACE_WITH_MASTER_KEY'} or not secrets.compare_digest(parts[1].encode('utf-8'), str(MASTER_API_KEY).encode('utf-8')):
         raise HTTPException(status_code=401, detail="Invalid API key")
 
 @app.get("/api/health", dependencies=[Depends(verify_key)])
@@ -290,23 +296,32 @@ def get_stats():
         return {"error": str(e), "hostname": AGENT_HOSTNAME}
 
 @app.get("/api/processes", dependencies=[Depends(verify_key)])
-def get_procs(limit: int=25, sort_by: str='cpu'):
+def get_procs(limit: int=Query(25, ge=1, le=1000), sort_by: str='cpu'):
+    if not isinstance(limit, int):
+        limit = 25
     procs = []
     for p in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent', 'username']):
         try:
-            d = p.info; d['hostname'] = AGENT_HOSTNAME
+            d = dict(p.info); d['hostname'] = AGENT_HOSTNAME
+            d['cpu'] = d.pop('cpu_percent') or 0
+            d['memory'] = d.pop('memory_percent') or 0
+            d['user'] = d.pop('username')
+            d['ppid'] = p.ppid()
             procs.append(d)
         except: pass
     procs.sort(key=lambda x: x.get(sort_by, 0) or 0, reverse=True)
     return procs[:limit]
 
-class KillRequest(BaseModel):
-    pid: int
-    kill_tree: bool = False
+from schemas import KillRequest, PortScanRequest
 
 @app.post("/api/processes/kill", dependencies=[Depends(verify_key)])
 def kill_proc(req: KillRequest):
     try:
+        protected = {0, 1, os.getpid()}
+        if req.kill_tree:
+            protected.update(p.pid for p in psutil.Process().parents())
+        if req.pid in protected:
+            return {'status': 'error', 'message': 'The agent process is protected.'}
         p = psutil.Process(req.pid)
         if req.kill_tree:
             for c in p.children(recursive=True): c.kill()
@@ -315,7 +330,7 @@ def kill_proc(req: KillRequest):
     except Exception as e: return {"status": "error", "message": str(e)}
 
 @app.get("/api/connections", dependencies=[Depends(verify_key)])
-def get_conns(limit: int=100, status: str=None):
+def get_conns(limit: int=Query(100, ge=1, le=1000), status: str=None):
     conns = []
     try:
         for c in psutil.net_connections(kind='inet'):
@@ -331,7 +346,8 @@ def get_conns(limit: int=100, status: str=None):
 
 @app.get("/api/logs", dependencies=[Depends(verify_key)])
 def get_logs(file: str=None, level: str=None):
-    path = CONFIG['log_files_to_analyze'].get(file)
+    paths = CONFIG.get('log_files_to_analyze', {})
+    path = paths.get(file) if file else next(iter(paths.values()), None)
     if not path or not os.path.exists(path): return {"logs": []}
     out = []
     try:
@@ -346,24 +362,26 @@ def get_logs(file: str=None, level: str=None):
 @app.get("/api/log-files", dependencies=[Depends(verify_key)])
 def list_logs(): return {"log_files": list(CONFIG['log_files_to_analyze'].keys())}
 
-class PortScanRequest(BaseModel):
-    target: str
-    ports: Optional[str] = None
+
 
 @app.post("/api/security/port-scan", dependencies=[Depends(verify_key)])
 def api_port_scan(req: PortScanRequest):
-    # Quick simple scanner logic embedded here to save space
-    target_ip = socket.gethostbyname(req.target)
-    ports = [int(p) for p in (req.ports or "80,443").split(',') if p.isdigit()]
-    results = []
-    for p in ports:
+    from concurrent.futures import ThreadPoolExecutor
+    try:
+        target_ip = socket.gethostbyname(req.target)
+    except socket.gaierror:
+        return {'status': 'error', 'message': 'Could not resolve target', 'results': []}
+    ports = [int(p) for p in (req.ports or '80,443').split(',')]
+    def scan(port):
         try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.settimeout(1)
-                res = s.connect_ex((target_ip, p))
-                results.append({'port': p, 'status': 'open' if res==0 else 'closed', 'service': '?'})
-        except: pass
-    return {"results": results}
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as connection:
+                connection.settimeout(1)
+                opened = connection.connect_ex((target_ip, port)) == 0
+            return {'port': port, 'status': 'open' if opened else 'closed', 'service': '?'}
+        except OSError:
+            return {'port': port, 'status': 'error', 'service': '?'}
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        return {'results': list(pool.map(scan, ports))}
 
 @app.get("/api/services", dependencies=[Depends(verify_key)])
 def get_services():
@@ -389,5 +407,5 @@ def get_services():
 
 if __name__ == "__main__":
     port = CONFIG.get("agent_port", 8082)
-    print(f"🚀 AGENT STARTED on {AGENT_HOSTNAME}:{port}")
+    print(f" AGENT STARTED on {AGENT_HOSTNAME}:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")

@@ -37,7 +37,7 @@ graph TD
 * **Control Actions:** Actions like killing a process are initiated from the Master Dashboard UI, routed through the Master API, and sent to the agent's `/api/processes/kill` endpoint.
 
 ### 3. Asynchronous Packet Sniffing (Requests Tab)
-* **Buffer & Flush:** If `scapy` is installed on the agent, it runs a background packet sniffer on the active network interface. Sniffed HTTP/HTTPS metadata is accumulated in a local buffer and flushed every 3 seconds to the Master's `/api/agent/submit_requests` endpoint to avoid overloading the network.
+* **Buffer & Flush:** If `scapy` is installed and `enable_packet_sniffing` is explicitly enabled on the agent, it runs a background packet sniffer on the active network interface. Sniffed HTTP/HTTPS metadata is accumulated in a local buffer and flushed every 3 seconds to the Master's `/api/agent/submit_requests` endpoint to avoid overloading the network.
 
 ---
 
@@ -47,7 +47,7 @@ Follow these steps to deploy and register a new agent on a remote server:
 
 ### Step 1: Prepare the Remote Agent
 On the server you wish to monitor:
-1. Clone the dashboard codebase or copy the `agent.py` and `requirements.txt` files to the server.
+1. Clone the dashboard codebase or copy the `agent.py`, `schemas.py`, and `requirements.txt` files to the server.
 2. Install the python dependencies:
    ```bash
    pip install -r requirements.txt
@@ -102,3 +102,8 @@ On your Master Dashboard server, open `C:\ProgramData\ServerMonitor\config.json`
 ```
 
 Restart the Master Dashboard or wait for it to reload the config dynamically. The new server will now appear in the **Server Status** and **Comparison** tabs on the web UI!
+
+
+## v16 runtime notes
+
+Master configuration is resolved by `settings.py` from the application directory or `OPS_DATA_DIR` / `OPS_CONFIG`. Administrative routes require a bearer key; reads can also be protected. See README.md for the authoritative configuration and migration instructions. SQLite batches retry failed transactions and connections close deterministically. The collector stops before the final database flush. Browser assets are served locally from `static/`.

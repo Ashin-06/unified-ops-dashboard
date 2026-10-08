@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
-"""
-Server Monitor v15.25 - Core Logic
-==================================
-- FIX: get_system_stats now retrieves disk/uptime/connections for remote agents.
-- FIX: Packet Sniffer writes are non-blocking via database batching.
-- FIX: Timeline charts correctly calculate I/O rates.
-- FIX: Kill Process functionality enabled.
-"""
+"""System collection, alerting, and historical queries."""
 
 import os
 import sys
@@ -37,12 +30,7 @@ except Exception:
     SCAPY_AVAILABLE = False
 
 # --- Configuration Loading ---
-if os.name == 'nt':
-    BASE_DIR = Path(os.getenv('PROGRAMDATA', 'C:/')) / 'ServerMonitor'
-else:
-    BASE_DIR = Path('/opt/server_monitor')
-
-CONFIG_PATH = BASE_DIR / 'config.json'
+from settings import BASE_DIR, CONFIG_PATH, USER_CONFIG, data_path
 
 DEFAULT_CONFIG = {
     "interface": None, "web_port": 8081,
@@ -50,7 +38,7 @@ DEFAULT_CONFIG = {
     "database": str(BASE_DIR / 'Data' / 'monitor.db'),
     "retention_days": 7,
     "performance": {
-        "enable_packet_sniffing": True,
+        "enable_packet_sniffing": False,
         "metric_collection_interval": 5,
         "batch_db_writes": True, "batch_size": 50,
         "frontend_poll_interval": 15,
@@ -79,20 +67,18 @@ BASE_DIR.mkdir(parents=True, exist_ok=True)
 (BASE_DIR / 'Logs').mkdir(exist_ok=True)
 (BASE_DIR / 'Data').mkdir(exist_ok=True)
 
-# Load configurations
-if not Path(CONFIG_PATH).exists():
-    with open(CONFIG_PATH, "w") as f: json.dump(DEFAULT_CONFIG, f, indent=4)
-with open(CONFIG_PATH, "r") as f:
-    try: user_cfg = json.load(f)
-    except Exception: user_cfg = {}
-CONFIG = DEFAULT_CONFIG.copy()
-for key, value in user_cfg.items():
+# Merge nested user settings without mutating defaults.
+from copy import deepcopy
+CONFIG = deepcopy(DEFAULT_CONFIG)
+for key, value in USER_CONFIG.items():
     if key in CONFIG and isinstance(CONFIG[key], dict) and isinstance(value, dict):
         CONFIG[key].update(value)
-    else: CONFIG[key] = value
+    else:
+        CONFIG[key] = value
 
 # --- Logging Setup ---
-LOG_FILE = Path(CONFIG.get("log_file", BASE_DIR / "Logs" / "monitor.log"))
+LOG_FILE = data_path(CONFIG.get('log_file'), 'Logs/monitor.log')
+CONFIG['log_file'] = str(LOG_FILE)
 LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 logging.getLogger().handlers.clear()
 logger = logging.getLogger("ServerMonitor")
@@ -247,6 +233,8 @@ class ServerMonitor:
         self.last_disk_read, self.last_disk_write, self.last_net_sent, self.last_net_recv = 0, 0, 0, 0
         self.last_metric_time = time.time()
         self._threads_started = False
+        self.stop_event = threading.Event()
+        self.threads = []
         
         # --- PROCESS CACHE FOR CPU CALCULATION ---
         self.process_map = {} # {pid: psutil.Process_object}
@@ -272,7 +260,7 @@ class ServerMonitor:
         logger.info(f"ServerMonitor initialized - Hostname: {self.hostname}")
 
     def monitor_system_resources(self):
-        while True:
+        while not self.stop_event.is_set():
             try:
                 # Interval is small to prevent blocking, but enough to measure CPU
                 cpu = psutil.cpu_percent(interval=1.0)
@@ -357,11 +345,11 @@ class ServerMonitor:
                     pass
                 
                 # Sleep the remainder of the interval
-                time.sleep(max(1, self.metric_interval - 1.0))
+                self.stop_event.wait(max(1, self.metric_interval - 1.0))
                 
             except Exception as e:
                 logger.error("Monitor loop error: %s", e)
-                time.sleep(5)
+                self.stop_event.wait(5)
 
     def _refresh_connections_cache(self, nowt):
         try:
@@ -550,23 +538,23 @@ class ServerMonitor:
         if not self.packet_sniffing_enabled or not SCAPY_AVAILABLE: return
         try:
             iface = CONFIG.get('interface', None) 
-            threading.Thread(target=lambda: [time.sleep(60), self.tcp_tracker.cleanup_old_sessions()], daemon=True).start()
             # Capture all TCP/UDP.
-            sniff(iface=iface, prn=self.packet_handler, filter="tcp or udp", store=0)
+            while not self.stop_event.is_set():
+                sniff(iface=iface, prn=self.packet_handler, filter="tcp or udp", store=0, timeout=2)
         except Exception as e:
             logger.error(f"Packet sniffing error: {e}")
 
     def cleanup_loop(self):
         retention = CONFIG.get('retention_days', 7)
-        while True:
+        while not self.stop_event.is_set():
             try:
                 cutoff = (datetime.now(timezone.utc) - timedelta(days=retention)).isoformat()
-                db.execute('DELETE FROM system_metrics WHERE timestamp < ?', (cutoff,))
-                db.execute('DELETE FROM requests WHERE timestamp < ?', (cutoff,))
-                db.execute('DELETE FROM alerts WHERE timestamp < ?', (cutoff,))
+                db.execute('DELETE FROM system_metrics WHERE julianday(timestamp) < julianday(?)', (cutoff,))
+                db.execute('DELETE FROM requests WHERE julianday(timestamp) < julianday(?)', (cutoff,))
+                db.execute('DELETE FROM alerts WHERE julianday(timestamp) < julianday(?)', (cutoff,))
                 db.vacuum()
             except Exception as e: logger.error(f"Cleanup error: {e}")
-            time.sleep(21600)
+            self.stop_event.wait(21600)
 
     # --- API Data Functions ---
     def get_system_stats(self, hostname: str = None):
@@ -575,13 +563,13 @@ class ServerMonitor:
             try:
                 # Get latest metrics row
                 row = db.query(
-                    "SELECT cpu_percent, memory_percent, disk_usage, uptime, total_connections "
+                    "SELECT cpu_percent, memory_percent, disk_usage, uptime, total_connections, timestamp "
                     "FROM system_metrics WHERE hostname = ? ORDER BY timestamp DESC LIMIT 1", 
                     (hostname,)
                 )
                 
                 if row and row[0]:
-                    cpu_val, mem_val, disk_val, uptime_val, conn_val = row[0]
+                    cpu_val, mem_val, disk_val, uptime_val, conn_val, last_seen = row[0]
                     # Ensure no None types (safety fallback)
                     cpu_val = float(cpu_val) if cpu_val is not None else 0.0
                     mem_val = float(mem_val) if mem_val is not None else 0.0
@@ -610,6 +598,8 @@ class ServerMonitor:
                     'services_running': 0, 'services_total': 0,
                     'logged_in_users': [],
                     'packet_sniffing_enabled': False,
+                    'source': 'stored',
+                    'last_seen': row[0][5] if row else None,
                     'error': None if row else 'No data yet'
                 }
             except Exception as e:
@@ -685,7 +675,7 @@ class ServerMonitor:
         cutoff_dt_local = datetime.now() - duration
         cutoff_dt_utc = datetime.now(timezone.utc) - duration
         cutoff_space = cutoff_dt_utc.strftime('%Y-%m-%d %H:%M:%S.%f')
-        cutoff_t = cutoff_dt_utc.strftime('%Y-%m-%dT%H:%M:%f')
+        cutoff_t = cutoff_dt_utc.isoformat()
         query_hostname = hostname if hostname and hostname != 'all' else self.hostname
         
         # Query for both possible string formats (space & 'T')
@@ -693,9 +683,9 @@ class ServerMonitor:
             SELECT timestamp, cpu_percent, memory_percent, network_sent_rate, network_recv_rate, 
                    disk_read_rate, disk_write_rate, request_count
             FROM system_metrics
-            WHERE hostname = ? AND (timestamp >= ? OR timestamp >= ?)
-            ORDER BY timestamp ASC
-        ''', (query_hostname, cutoff_space, cutoff_t))
+            WHERE hostname = ? AND julianday(timestamp) >= julianday(?)
+            ORDER BY julianday(timestamp) ASC
+        ''', (query_hostname, cutoff_t))
 
         def _parse_timestamp(s: str):
             if not s: return None
@@ -725,7 +715,8 @@ class ServerMonitor:
                 dt_utc = dt.astimezone(timezone.utc)
                 if dt_utc < cutoff_dt_utc: continue
             else:
-                if dt < cutoff_dt_local: continue
+                dt = dt.replace(tzinfo=timezone.utc)
+                if dt < cutoff_dt_utc: continue
 
             ts_out = dt.astimezone(timezone.utc).isoformat() if dt.tzinfo else dt.isoformat()
 
@@ -796,7 +787,7 @@ class ServerMonitor:
         if not path or not Path(path).exists(): return [{'line': 'Log not found', 'level': 'error'}]
         out = []
         try:
-            with open(path, 'r', errors='ignore') as f: content = f.readlines()[-lines:]
+            with open(path, 'r', errors='ignore') as f: content = list(deque(f, maxlen=lines))
             for l in content:
                 lvl = 'info'
                 if 'error' in l.lower(): lvl = 'error'
@@ -816,7 +807,7 @@ class ServerMonitor:
 
     def get_alerts(self, hostname: str = None, limit: int = 200):
         try:
-            if hostname and hostname != self.hostname:
+            if hostname and hostname != 'all':
                 rows = db.query('SELECT timestamp, hostname, level, message, category FROM alerts WHERE hostname = ? ORDER BY timestamp DESC LIMIT ?', (hostname, limit))
             else:
                 rows = db.query('SELECT timestamp, hostname, level, message, category FROM alerts ORDER BY timestamp DESC LIMIT ?', (limit,))
@@ -860,11 +851,17 @@ class ServerMonitor:
 
     def set_alert_config(self, update_data: dict):
         try:
-            alerts = CONFIG.setdefault('alerts', {})
-            alerts.update(update_data)
-            with open(CONFIG_PATH, 'w', encoding='utf-8') as f: json.dump(CONFIG, f, indent=4)
-            return {"status": "success", "saved": list(update_data.keys())}
-        except Exception as e: return {"status": "error", "message": str(e)}
+            with self.lock:
+                # Persist only the requested changes, never environment-injected secrets.
+                stored = json.loads(CONFIG_PATH.read_text(encoding='utf-8'))
+                stored.setdefault('alerts', {}).update(update_data)
+                temporary = CONFIG_PATH.with_suffix('.json.tmp')
+                temporary.write_text(json.dumps(stored, indent=4), encoding='utf-8')
+                os.replace(temporary, CONFIG_PATH)
+                CONFIG.setdefault('alerts', {}).update(update_data)
+            return {'status': 'success', 'saved': list(update_data.keys())}
+        except Exception as e:
+            return {'status': 'error', 'message': str(e)}
 
     def get_log_analysis(self, log_file: str = None, hostname: str = None):
         """Analyzes a log file and returns structured insight data."""
@@ -877,7 +874,7 @@ class ServerMonitor:
         error_messages = []
         try:
             with open(path, 'r', errors='ignore') as f:
-                lines = f.readlines()[-2000:]  # Analyze last 2000 lines
+                lines = list(deque(f, maxlen=2000))  # Analyze last 2000 lines
             for line in lines:
                 ll = line.lower()
                 if 'error' in ll or 'critical' in ll or 'exception' in ll:
@@ -937,6 +934,11 @@ class ServerMonitor:
     # --- PROCESS KILL IMPLEMENTATION ---
     def kill_process(self, pid: int, kill_tree: bool = False):
         try:
+            protected = {0, 1, os.getpid()}
+            if kill_tree:
+                protected.update(p.pid for p in psutil.Process().parents())
+            if pid in protected or pid < 0:
+                return {'status': 'error', 'message': 'This process is protected.'}
             if not psutil.pid_exists(pid):
                 return {"status": "error", "message": f"Process {pid} not found."}
                 
@@ -965,13 +967,23 @@ class ServerMonitor:
                        (agent['hostname'], agent['url'], agent['api_key']))
 
     def start_background_threads(self):
-        if self._threads_started: return
+        if self._threads_started:
+            return
+        self.stop_event.clear()
         self.load_agents_from_config()
-        threading.Thread(target=self.monitor_system_resources, daemon=True, name="ResourceMonitor").start()
-        threading.Thread(target=self.cleanup_loop, daemon=True, name="CleanupLoop").start()
+        workers = [(self.monitor_system_resources, 'ResourceMonitor'), (self.cleanup_loop, 'CleanupLoop')]
         if self.packet_sniffing_enabled and SCAPY_AVAILABLE:
-            threading.Thread(target=self.monitor_packets, daemon=True, name="PacketSniffer").start()
+            workers.append((self.monitor_packets, 'PacketSniffer'))
+        self.threads = [threading.Thread(target=fn, daemon=True, name=name) for fn, name in workers]
+        for thread in self.threads:
+            thread.start()
         self._threads_started = True
+
+    def stop_background_threads(self):
+        self.stop_event.set()
+        for thread in self.threads:
+            thread.join(timeout=15)
+        self._threads_started = False
 
 # --- Create a single instance for export ---
 monitor = ServerMonitor()

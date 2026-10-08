@@ -1,18 +1,14 @@
 @echo off
-:: Check for Administrator privileges
-net session >nul 2>&1
-if %errorLevel% == 0 (
-    echo [Admin] Privileges confirmed.
-) else (
-    echo [Request] Requesting Administrator privileges...
-    powershell -Command "Start-Process '%~f0' -Verb RunAs"
-    exit /b
-)
-
+setlocal
 cd /d "%~dp0"
-echo [+] Working Directory: %CD%
-echo.
-echo [+] Starting Dashboard...
-echo.
-python -m uvicorn main:app --host 0.0.0.0 --port 8081
-pause
+set PYTHONUTF8=1
+if exist ".venv\Scripts\python.exe" (
+    ".venv\Scripts\python.exe" main.py
+) else (
+    python main.py
+)
+if errorlevel 1 (
+    echo.
+    echo Dashboard could not start. See README.md for installation instructions.
+    pause
+)
