@@ -302,6 +302,8 @@ def get_procs(limit: int=Query(25, ge=1, le=1000), sort_by: str='cpu'):
     procs = []
     for p in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent', 'username']):
         try:
+            if p.info['pid'] == 0:  # Windows' "System Idle Process" reports idle time, not work
+                continue
             d = dict(p.info); d['hostname'] = AGENT_HOSTNAME
             d['cpu'] = d.pop('cpu_percent') or 0
             d['memory'] = d.pop('memory_percent') or 0
