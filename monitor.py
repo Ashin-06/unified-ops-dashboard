@@ -962,9 +962,9 @@ class ServerMonitor:
 
     def load_agents_from_config(self):
         agents = CONFIG.get('agents', [])
-        for agent in agents:
-            db.execute("INSERT INTO agents (hostname, url, api_key) VALUES (?, ?, ?) ON CONFLICT(hostname) DO UPDATE SET url=excluded.url, api_key=excluded.api_key",
-                       (agent['hostname'], agent['url'], agent['api_key']))
+        if agents:
+            db.execute_many("INSERT INTO agents (hostname, url, api_key) VALUES (?, ?, ?) ON CONFLICT(hostname) DO UPDATE SET url=excluded.url, api_key=excluded.api_key",
+                            [(agent['hostname'], agent['url'], agent['api_key']) for agent in agents])
 
     def start_background_threads(self):
         if self._threads_started:
