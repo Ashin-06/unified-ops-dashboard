@@ -132,8 +132,7 @@ class SecurityStore:
                 conn.execute('UPDATE soc_incidents SET owner=? WHERE id=?',(change.owner,incident_id))
                 messages.append(f'Owner: {change.owner or "unassigned"}')
             if change.note and change.note.strip():messages.append(change.note.strip())
-            for message in messages:
-                conn.execute('INSERT INTO soc_timeline(incident_id,timestamp,actor,kind,message) VALUES(?,?,?,?,?)',(incident_id,now(),actor,'update',message))
+            conn.executemany('INSERT INTO soc_timeline(incident_id,timestamp,actor,kind,message) VALUES(?,?,?,?,?)',[(incident_id,now(),actor,'update',message) for message in messages])
             if messages:conn.execute('UPDATE soc_incidents SET updated_at=? WHERE id=?',(now(),incident_id))
             return True
 
